@@ -1,0 +1,7 @@
+[workspace]
+members=[
+  "reginleif",
+  "reginleif-macro"
+]
+resolver = "2"
+
