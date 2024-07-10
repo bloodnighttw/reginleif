@@ -32,6 +32,8 @@ pub fn time_sensitive(item:TokenStream) -> TokenStream{
     impl_expire(ast)
 }
 
+
+/// This function provide derive macro of refresh, it will make it panic!
 #[proc_macro_derive(NoRefresh, attributes(dur))]
 pub fn refresh_panic(item:TokenStream) -> TokenStream{
     let ast:ItemStruct = syn::parse(item).unwrap();
