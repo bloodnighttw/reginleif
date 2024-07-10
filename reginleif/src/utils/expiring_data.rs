@@ -1,25 +1,68 @@
 use std::time::Duration;
-use chrono::{Local};
+use chrono::{Local, TimeZone};
 use serde::{Deserialize, Serialize};
 use crate::utils::serde_convert::{local_to_string, string_to_local};
 use anyhow::Result;
 
+/// This struct is used to store data that will expire.
+/// 
+/// # Attribute
+/// 
+/// * `data`: the data that will expire, the data must impl [Expirable](Expirable) and [Refreshable](Refreshable).
+/// * `created_at`: the time this data created/refresh.
+/// 
 #[derive(Clone, Deserialize, Serialize, Debug, PartialEq)]
 pub struct ExpiringData<T> where T:Expirable+Refreshable{
+    /// the data that will expire
     pub data: T,
+    /// the time this object created/refresh
     #[serde(deserialize_with = "string_to_local", serialize_with = "local_to_string")]
     pub created_at: chrono::DateTime<Local>,
 }
 
 /// A trait for data that can expire.
+/// 
+/// The data must have duration and the function `get_duration` must return the duration of the data.
+/// You can also use ``Expirable`` derive and annotate the duration field
+/// with ``#[dur]`` to annotate the duration field.
+/// 
+/// # Example
+/// ```
+/// use std::time::Duration;
+/// use reginleif_macro::Expirable;
+///
+/// #[derive(Expirable,Default)]
+/// struct TestStruct1{ 
+///     #[dur] duration: Duration 
+/// }
+///
+/// ```
 pub trait Expirable {
     
     /// Get the duration of the data.
-    /// Use in the `is_expired` function.
+    /// 
+    /// Use in the [is_expired](ExpiringData::is_expired) function.
     fn get_duration(&self) -> Duration;
 
 }
 
+/// A trait for data that can be refreshed.
+/// 
+/// Note that all [ExpiringData](ExpiringData)'s data must impl this trait,
+/// and if you want not to make it refreshable, you can just panic!
+/// or you can use ``NoRefresh`` derive to make it panic when call this function.
+/// 
+/// # Example
+/// ```
+/// use std::time::Duration;
+/// use reginleif_macro::{Expirable, NoRefresh};
+///
+/// #[derive(Expirable,NoRefresh,Default)]
+/// struct TestStruct1{ 
+///     #[dur] duration: Duration 
+/// }
+/// 
+/// ```
 pub trait Refreshable{
     /// Refresh the data.
     /// if the data don't have want to refresh, just not impl it,
@@ -42,6 +85,7 @@ where
     }
     
     /// Get the reference of data.
+    /// 
     /// The function won't check the data is expired or not.
     pub fn get_ref(&self) -> &T{
         &self.data
@@ -64,7 +108,13 @@ where
 
 }
 
+
 impl<T> From<T> for ExpiringData<T> where T:Expirable + Refreshable{
+    /// Convert the data to `ExpiringData`.
+    ///
+    /// The `created_at` will be set to `Local::now()`.
+    /// Note this means the data is created at the time of the function call,
+    /// and **YOU SHOULD ENSURE** the data is valid when using this trait.
     fn from(data: T) -> Self{
         Self{
             data,
@@ -99,14 +149,15 @@ mod test{
     pub async fn test_expire(){
         let test:ExpiringData<_> = TestStruct1::default().into();
         tokio::time::sleep(Duration::from_secs(2)).await;
-        assert!(test.is_expired())
+        let temp = test.is_expired();
+        let _test = test.get_ref();
+        assert!(temp)
     }
 
     #[tokio::test]
     #[should_panic]
     pub async fn test_no_refresh(){
         let mut test:ExpiringData<_> = TestStruct1::default().into();
- 
         test.refresh().await.expect("it's should be panic!");
     }
 
