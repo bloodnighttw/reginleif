@@ -49,7 +49,7 @@ pub trait Expirable {
 /// A trait for data that can be refreshed.
 /// 
 /// Note that all [ExpiringData](ExpiringData)'s data must impl this trait,
-/// and if you want not to make it refreshable, you can just panic!
+/// and if you want not to make it refreshable, you can just panic! or just return Ok(()) to it.
 /// or you can use ``NoRefresh`` derive to make it panic when call this function.
 /// 
 /// # Example
