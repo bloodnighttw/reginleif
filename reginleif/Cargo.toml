@@ -13,3 +13,4 @@ serde_json = "1.0.120"
 anyhow = "1.0.86"
 tokio = {  version = "1.38.0", features = ["full"] }
 reginleif-macro = {path = "../reginleif-macro"}
+async-trait = "0.1.81"
