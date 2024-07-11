@@ -14,34 +14,111 @@ use crate::auth::constant::{DEVICECODE_URL, GRANT_TYPE, SCOPE, TOKEN_URL};
 /// If you want to get a valid token, you should abandon this and create new one directly, not using refresh to make it valid.
 #[derive(Debug, serde::Deserialize, serde::Serialize, Clone, Expirable, NoRefresh)]
 pub struct DeviceCode{
+    
+    /// A short string shown to the user used to identify the session on a secondary device.
+    /// 
+    /// see [Microsoft DOCS](https://learn.microsoft.com/en-us/entra/identity-platform/v2-oauth2-device-code#device-authorization-response)
     pub user_code: String,
+    
+    /// A long string used to verify the session between the client and the authorization server. 
+    /// The client uses this parameter to request the access token from the authorization server.
+    /// 
+    /// see [Microsoft DOCS](https://learn.microsoft.com/en-us/entra/identity-platform/v2-oauth2-device-code#device-authorization-response)
     pub device_code: String,
+    
+    /// The URI the user should go to with the user_code in order to sign in.
+    /// 
+    /// see [Microsoft DOCS](https://learn.microsoft.com/en-us/entra/identity-platform/v2-oauth2-device-code#device-authorization-response)
     pub verification_uri: String,
+    
+    /// The number of seconds before the device_code and user_code expire.
+    /// 
+    /// see [Microsoft DOCS](https://learn.microsoft.com/en-us/entra/identity-platform/v2-oauth2-device-code#device-authorization-response)
     #[serde(deserialize_with = "sec_to_duration", serialize_with = "duration_to_sec")]
     #[dur]
     pub expires_in: Duration,
+    
+    /// The number of seconds the client should wait between polling requests.
+    /// 
+    /// see [Microsoft DOCS](https://learn.microsoft.com/en-us/entra/identity-platform/v2-oauth2-device-code#device-authorization-response)
     #[serde(deserialize_with = "sec_to_duration", serialize_with = "duration_to_sec")]
     pub interval: Duration,
 }
 
 #[derive(Error,Debug)]
 pub enum MicrosoftAuthError{
+    
+    /// if you get this error, you should try again in ``interval`` sec later.
+    /// 
+    /// see [Microsoft DOCS](https://learn.microsoft.com/en-us/entra/identity-platform/v2-oauth2-device-code#expected-errors)
     #[error("Failed to exchange device code. please try again. details:AuthorizationPending")]
     AuthorizationPending,
+    
+    /// User declined the authorization.
+    /// 
+    /// see [Microsoft DOCS](https://learn.microsoft.com/en-us/entra/identity-platform/v2-oauth2-device-code#expected-errors)
     #[error("Failed to exchange device code. details: AuthorizationDeclined")]
     AuthorizationDeclined,
+
+    /// The auth server cannot identify the device code. Please check the device code is correct or not!
+    ///
+    /// see [Microsoft DOCS](https://learn.microsoft.com/en-us/entra/identity-platform/v2-oauth2-device-code#expected-errors)
     #[error("Failed to exchange device code. details: BadVerificationCode")]
     BadVerificationCode,
+
+    /// The token is expired.
+    /// 
+    /// see [Microsoft DOCS](https://learn.microsoft.com/en-us/entra/identity-platform/v2-oauth2-device-code#expected-errors)
     #[error("Failed to exchange device code. details: ExpiredToken")]
     ExpiredToken,
+    
+    /// This error is related to the request error.
+    ///
+    /// You can check error details in the inner error. 
     #[error("Error while fetching token. details:{0}")]
     ReqwesetError(#[from] reqwest::Error),
+    
+    /// The error which is not on the list.
+    /// 
+    /// You can check error details in the inner string.
     #[error("Unknown Error. details:{0}")]
     Others(String),
 }
 
 
 impl DeviceCode{
+    
+    /// To fetch the device code from the auth server.
+    /// 
+    /// # Arguments
+    /// * `client`: The reqwest client.
+    /// * `client_id`: The client id of your app.
+    /// 
+    /// # Returns
+    /// * Return anyhow::Result<DeviceCode>
+    /// 
+    /// # Example
+    /// ```
+    /// use reqwest::Client;
+    /// use reginleif::auth::microsoft::DeviceCode;
+    /// 
+    /// #[tokio::main]
+    /// async fn main(){
+    ///     let client = Client::new();
+    ///     let client_id = "your_client_id";
+    ///     let res = DeviceCode::fetch(&client,client_id).await;
+    /// 
+    ///     match res{
+    ///         Ok(device_code) => {
+    ///             println!("auth url: {}",device_code.verification_uri);
+    ///             println!("user code: {}",device_code.user_code);
+    ///         }
+    ///         Err(e) => {
+    ///             panic!("Error: {}",e); // error while fetching token. 
+    ///         }
+    ///     };
+    /// }
+    /// ```
     pub async fn fetch(client: &Client, client_id: &str) -> anyhow::Result<Self>{
         let params = [
             ("client_id", client_id),
@@ -58,7 +135,59 @@ impl DeviceCode{
         Ok(res)
     }
 
-    pub async fn exchange(&self, client: &Client, client_id:&str) -> anyhow::Result<MicrosoftAuthResponse,MicrosoftAuthError>{
+    /// To exchange the device code to a valid token.
+    /// 
+    /// # Arguments
+    /// * `client`: The reqwest client.
+    /// * `client_id`: The client id of your app.
+    /// 
+    /// # Returns
+    /// * Return Result<MicrosoftAuthResponse,MicrosoftAuthError>
+    /// 
+    /// # Example
+    /// ```
+    /// use reqwest::Client;
+    /// use reginleif::auth::microsoft::DeviceCode; 
+    /// use reginleif::auth::microsoft::{MicrosoftAuthError, MicrosoftAuthResponse};
+    ///
+    /// #[tokio::main]
+    /// async fn main(){
+    /// let client = Client::new();
+    ///     let client_id = "your_client_id";
+    ///     let res = DeviceCode::fetch(&client,client_id).await;
+    ///
+    ///     let device_code = match res{
+    ///         Ok(device_code) => {
+    ///             println!("auth url: {}",device_code.verification_uri);
+    ///             println!("user code: {}",device_code.user_code);
+    ///             device_code
+    ///         }
+    ///         Err(e) => {
+    ///             panic!("Error: {}",e); // error while fetching token. 
+    ///         }
+    ///     };
+    ///
+    ///     let res = loop{
+    ///         let result = device_code.exchange(&client,client_id).await;      
+    ///         let res = match result{
+    ///             Ok(res) => {res}
+    ///             Err(e) => {
+    ///                 match e { 
+    ///                     MicrosoftAuthError::AuthorizationPending => {
+    ///                         tokio::time::sleep(device_code.interval).await;
+    ///                         continue;
+    ///                     }
+    ///                     _=> {panic!("Error: {}",e);}
+    ///                 } 
+    /// 
+    ///             }
+    ///         };
+    ///         break res
+    ///     };
+    ///
+    /// }
+    /// ```
+    pub async fn exchange(&self, client: &Client, client_id:&str) -> Result<MicrosoftAuthResponse,MicrosoftAuthError>{
 
         let params: HashMap<String, String> = HashMap::from([
             (String::from("client_id"), client_id.to_string()),
