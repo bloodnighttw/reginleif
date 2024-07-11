@@ -1,3 +1,4 @@
+use std::time::Duration;
 use chrono::{DateTime, Local};
 use serde::{de, Deserialize, Deserializer, Serializer};
 use serde_json::Value;
@@ -24,4 +25,17 @@ where
     S: Serializer,
 {
     s.serialize_str(x.to_rfc3339().as_str())
+}
+
+
+pub fn duration_to_sec<S>(x: &Duration, s: S) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    s.serialize_u64(x.as_secs())
+}
+
+pub fn sec_to_duration<'de, D: Deserializer<'de>>(deserializer: D) -> Result<Duration, D::Error> {
+    let secs = u64::deserialize(deserializer)?;
+    Ok(Duration::from_secs(secs))
 }
