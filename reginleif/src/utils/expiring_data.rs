@@ -98,7 +98,7 @@ pub trait Refreshable<J>{
     ///
     /// # Arguments
     /// * `args`: the arguments that need to refresh the data, if you don't know what to put, just use `()`.
-    async fn refresh(&mut self,args:J) -> Result<()>;
+    async fn refresh(&mut self,args:&J) -> Result<()>;
 }
 
 impl<T,J> ExpiringData<T,J>
@@ -123,14 +123,14 @@ where
     }
     
     /// Refresh data and update `created_at`
-    pub async fn refresh(&mut self,args:J) -> Result<()>{
+    pub async fn refresh(&mut self,args:&J) -> Result<()>{
         self.data.refresh(args).await?;
         self.created_at = Local::now();
         Ok(())
     }
     
     /// Check the data is valid and return the reference of data.
-    pub async fn try_ref(&mut self,args:J) -> Result<&T>{
+    pub async fn try_ref(&mut self,args:&J) -> Result<&T>{
         if self.is_expired(){
             self.refresh(args).await?;
         }
@@ -173,7 +173,7 @@ mod test{
 
     #[async_trait::async_trait]
     impl Refreshable<()> for TestStruct2{
-        async fn refresh(&mut self,_:()) -> anyhow::Result<()> {
+        async fn refresh(&mut self,_:&()) -> anyhow::Result<()> {
             Ok(()) // do nothing in test
         }
     }
@@ -191,15 +191,15 @@ mod test{
     #[should_panic]
     pub async fn test_no_refresh(){
         let mut test:ExpiringData<_,_> = TestStruct1::default().into();
-        test.refresh(()).await.expect("it's should be panic!");
+        test.refresh(&()).await.expect("it's should be panic!");
     }
 
     #[tokio::test]
     pub async fn test_expire2(){
         let mut test:ExpiringData<_,_> = TestStruct2::default().into();
         tokio::time::sleep(Duration::from_secs(2)).await;
-        test.refresh(()).await.unwrap();
-        test.try_ref(()).await.unwrap();
+        test.refresh(&()).await.unwrap();
+        test.try_ref(&()).await.unwrap();
     }
     
 }
