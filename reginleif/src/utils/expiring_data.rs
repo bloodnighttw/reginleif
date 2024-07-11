@@ -1,4 +1,3 @@
-use std::marker::PhantomData;
 use std::time::Duration;
 use chrono::Local;
 use serde::{Deserialize, Serialize};
@@ -14,7 +13,7 @@ use async_trait::async_trait;
 /// * `created_at`: the time this data created/refresh.
 ///
 #[derive(Clone, Deserialize, Serialize, Debug, PartialEq)]
-pub struct ExpiringData<T,U> where T:Expirable+Refreshable<U>
+pub struct ExpiringData<T> where T:Expirable+Refreshable
 {
 
     /// the data that will expire
@@ -22,8 +21,7 @@ pub struct ExpiringData<T,U> where T:Expirable+Refreshable<U>
     /// the time this object created/refresh
     #[serde(deserialize_with = "string_to_local", serialize_with = "local_to_string")]
     pub created_at: chrono::DateTime<Local>,
-    /// this will not include in memory
-    _marker: PhantomData<U>
+
 }
 
 /// A trait for data that can expire.
@@ -84,26 +82,29 @@ pub trait Expirable{
 ///  }
 ///
 ///  #[async_trait::async_trait] // you can also import it.
-///  impl Refreshable<()> for TestStruct2{
+///  impl Refreshable for TestStruct2{
+///     type Args = ();
+///
 ///     async fn refresh(&mut self,_:&()) -> anyhow::Result<()> {
 ///         Ok(()) // do nothing in test
 ///     }
 ///  }
 /// ``` 
 #[async_trait]
-pub trait Refreshable<J>{
+pub trait Refreshable{
+    type Args;
     /// Refresh the data.
     /// if the data don't have want to refresh, just not impl it,
     /// and it will panic when call this function.
     ///
     /// # Arguments
-    /// * `args`: the arguments that need to refresh the data, if you don't know what to put, just use `()`.
-    async fn refresh(&mut self,args:&J) -> Result<()>;
+    /// * `args`: the arguments that need to refresh the data, if you don't know what to put, just use `&()`.
+    async fn refresh(&mut self,args:&Self::Args) -> Result<()>;
 }
 
-impl<T,J> ExpiringData<T,J>
+impl<T> ExpiringData<T>
 where
-    T: Expirable + Refreshable<J>,
+    T: Expirable + Refreshable,
 {
 
     /// Check the data is expired or not.
@@ -123,14 +124,14 @@ where
     }
     
     /// Refresh data and update `created_at`
-    pub async fn refresh(&mut self,args:&J) -> Result<()>{
+    pub async fn refresh(&mut self,args:&T::Args) -> Result<()>{
         self.data.refresh(args).await?;
         self.created_at = Local::now();
         Ok(())
     }
     
     /// Check the data is valid and return the reference of data.
-    pub async fn try_ref(&mut self,args:&J) -> Result<&T>{
+    pub async fn try_ref(&mut self,args:&T::Args) -> Result<&T>{
         if self.is_expired(){
             self.refresh(args).await?;
         }
@@ -140,7 +141,7 @@ where
 }
 
 
-impl<T,J> From<T> for ExpiringData<T,J> where T:Expirable + Refreshable<J>{
+impl<T> From<T> for ExpiringData<T> where T:Expirable + Refreshable{
     /// Convert the data to `ExpiringData`.
     ///
     /// The `created_at` will be set to `Local::now()`.
@@ -150,7 +151,6 @@ impl<T,J> From<T> for ExpiringData<T,J> where T:Expirable + Refreshable<J>{
         Self{
             data,
             created_at: Local::now(),
-            _marker: PhantomData
         }
     }
 }
@@ -172,7 +172,10 @@ mod test{
     }
 
     #[async_trait::async_trait]
-    impl Refreshable<()> for TestStruct2{
+    impl Refreshable for TestStruct2{
+        
+        type Args = ();
+        
         async fn refresh(&mut self,_:&()) -> anyhow::Result<()> {
             Ok(()) // do nothing in test
         }
@@ -180,7 +183,7 @@ mod test{
 
     #[tokio::test]
     pub async fn test_expire(){
-        let test:ExpiringData<_,_> = TestStruct1::default().into();
+        let test:ExpiringData<_> = TestStruct1::default().into();
         tokio::time::sleep(Duration::from_secs(2)).await;
         let temp = test.is_expired();
         let _test = test.get_ref();
@@ -190,13 +193,13 @@ mod test{
     #[tokio::test]
     #[should_panic]
     pub async fn test_no_refresh(){
-        let mut test:ExpiringData<_,_> = TestStruct1::default().into();
+        let mut test:ExpiringData<_> = TestStruct1::default().into();
         test.refresh(&()).await.expect("it's should be panic!");
     }
 
     #[tokio::test]
     pub async fn test_expire2(){
-        let mut test:ExpiringData<_,_> = TestStruct2::default().into();
+        let mut test:ExpiringData<_> = TestStruct2::default().into();
         tokio::time::sleep(Duration::from_secs(2)).await;
         test.refresh(&()).await.unwrap();
         test.try_ref(&()).await.unwrap();

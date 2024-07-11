@@ -189,7 +189,7 @@ impl DeviceCode{
     ///
     /// }
     /// ```
-    pub async fn exchange(&self, client: &Client, client_id:&str) -> Result<ExpiringMicrosoftAuth,MicrosoftAuthError>{
+    pub async fn exchange(&self, client: &Client, client_id:&str) -> Result<ExpiringData<MicrosoftAuth>,MicrosoftAuthError>{
 
         let params = HashMap::from([
             (String::from("client_id"), client_id.to_string()),
@@ -238,7 +238,10 @@ pub struct MicrosoftAuth {
 }
 
 #[async_trait]
-impl Refreshable<(Client,String)> for MicrosoftAuth{
+impl Refreshable for MicrosoftAuth{
+    
+    type Args = (Client,String);
+    
     /// 
     /// 
     /// # Arguments 
@@ -324,8 +327,6 @@ impl Refreshable<(Client,String)> for MicrosoftAuth{
         Ok(())
     }
 }
-
-pub type ExpiringMicrosoftAuth = ExpiringData<MicrosoftAuth,(Client, String)>;
 
 #[cfg(test)]
 mod test{

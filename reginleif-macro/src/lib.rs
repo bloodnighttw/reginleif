@@ -40,8 +40,11 @@ pub fn refresh_panic(item:TokenStream) -> TokenStream{
     let ident = ast.ident;
     let token = quote::quote! {
         #[async_trait::async_trait]
-        impl crate::utils::expiring_data::Refreshable<()> for #ident{
-            async fn refresh(&mut self,_:&()) -> anyhow::Result<()>{
+        impl crate::utils::expiring_data::Refreshable for #ident{
+            
+            type Args = ();
+
+            async fn refresh(&mut self, args: &()) -> anyhow::Result<()> {
                 panic!("The data struct can't use refresh function.");
             }
         }
