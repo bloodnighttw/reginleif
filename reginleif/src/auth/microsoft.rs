@@ -239,6 +239,68 @@ pub struct MicrosoftAuth {
 
 #[async_trait]
 impl Refreshable<(Client,String)> for MicrosoftAuth{
+    /// 
+    /// 
+    /// # Arguments 
+    /// 
+    /// * `args`: &(Client,String)
+    ///     * Client: The reqwest client.
+    ///     * String: The client id of your app.
+    /// 
+    /// returns: anyhow::Result<()> 
+    /// 
+    /// # Examples 
+    /// 
+    /// ```
+    /// 
+    /// use std::time::Duration; 
+    /// use reginleif::auth::microsoft::MicrosoftAuthError;
+    /// 
+    /// #[tokio::main]
+    /// async fn main(){
+    ///
+    ///  let client = reqwest::Client::new();    /// 
+    ///  let client_id = "47f3e635-2886-4628-a1c2-fd8a9f4d7a5f";
+    ///  let res = super::DeviceCode::fetch(&client,client_id).await;
+    ///
+    ///  let device_code = match res{
+    ///     Ok(device_code) => { 
+    ///         println!("auth url: {}",device_code.verification_uri);
+    ///         println!("user code: {}",device_code.user_code);
+    ///         device_code
+    ///     }
+    ///     Err(e) => {
+    ///         panic!("Error: {}",e); // error while fetching token.
+    ///     }
+    ///  };
+    ///
+    ///
+    ///  let mut res = loop{
+    ///     let result = device_code.exchange(&client,client_id).await;
+    ///     let res = match result{
+    ///         Ok(res) => {res}
+    ///         Err(e) => {
+    ///             match e {
+    ///                 MicrosoftAuthError::AuthorizationPending => {
+    ///                     tokio::time::sleep(device_code.interval).await;
+    ///                     continue;
+    ///                 }
+    ///             _=> {panic!("Error: {}",e);}
+    ///             }
+    ///         }   
+    ///     };
+    ///     break res;
+    ///  };
+    ///         
+    ///         
+    ///     let cloned = res.clone();
+    ///         
+    ///     tokio::time::sleep(Duration::from_secs(2)).await;
+    ///     res.refresh(&(client,client_id.to_string())).await.unwrap();
+    ///
+    ///         
+    ///  }
+    /// ```
     async fn refresh(&mut self, args: &(Client,String)) -> anyhow::Result<()> {
         
         let (client,client_id) = args;

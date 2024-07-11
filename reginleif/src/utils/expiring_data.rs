@@ -85,7 +85,7 @@ pub trait Expirable{
 ///
 ///  #[async_trait::async_trait] // you can also import it.
 ///  impl Refreshable<()> for TestStruct2{
-///     async fn refresh(&mut self,_:()) -> anyhow::Result<()> {
+///     async fn refresh(&mut self,_:&()) -> anyhow::Result<()> {
 ///         Ok(()) // do nothing in test
 ///     }
 ///  }
