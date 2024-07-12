@@ -68,8 +68,8 @@ impl XboxLiveToken {
 /// This token is used to authenticate the user with Minecraft Auth Server.
 #[derive(Debug)]
 pub struct XboxSecurityToken{
-    token: String,
-    uhs: String,
+    pub token: String,
+    pub uhs: String,
 }
 
 impl From<(&str,&str)> for XboxSecurityToken{
