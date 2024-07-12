@@ -226,6 +226,7 @@ impl DeviceCode{
 
 }
 
+/// The struct contain all the information that oauth2 device code auth flow need.
 #[derive(Debug, serde::Deserialize, serde::Serialize, Clone, Expirable, PartialEq)]
 pub struct MicrosoftAuth {
     pub token_type: String,
