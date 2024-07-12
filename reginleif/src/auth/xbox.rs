@@ -81,6 +81,8 @@ impl From<(&str,&str)> for XboxSecurityToken{
     }
 }
 
+
+/// The error that can occur while fetching Xbox Security Token.
 #[derive(Error,Debug)]
 pub enum XboxSecurityError{
     #[error("The account doesn't have an Xbox account. Once they sign up for one (or login through minecraft.net to create one) then they can proceed with the login")]

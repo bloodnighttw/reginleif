@@ -58,7 +58,7 @@ mod test{
         println!("{:?}",xbox_live_token);
         let xbox_security_token = XboxSecurityToken::fetch(&client,xbox_live_token).await.unwrap();
         println!("{:?}",xbox_security_token);
-        
+
         let minecraft_auth = MinecraftAuth::fetch(&client,xbox_security_token).await.unwrap();
         println!("{:?}",minecraft_auth);
         let profile = Profile::fetch(&client,&minecraft_auth).await.unwrap();
@@ -73,7 +73,7 @@ mod test{
         res.refresh(&(client,client_id.to_string())).await.unwrap();
 
         assert_ne!(cloned.created_at,res.created_at);
-        
+
 
     }
 

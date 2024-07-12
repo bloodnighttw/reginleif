@@ -93,6 +93,11 @@ impl Expirable for Account{
     }
 }
 
+/// Refreshable
+/// 
+/// Implement this trait means you can refresh the data of the struct.
+/// This will be used in [ExpiringData](crate::utils::expiring_data::ExpiringData) to refresh the Account Data,
+/// include Minecraft Auth, Profile, and Microsoft Auth (if it's expired).
 #[async_trait]
 impl Refreshable for Account{
 
