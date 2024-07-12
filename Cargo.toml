@@ -1,6 +1,7 @@
 [workspace]
 members=[
   "reginleif",
+  "reginleif-test",
   "reginleif-utils",
   "reginleif-macro"
 ]
