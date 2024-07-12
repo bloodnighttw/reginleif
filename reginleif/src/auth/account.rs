@@ -19,7 +19,7 @@ use crate::utils::expiring_data::{Expirable, ExpiringData, Refreshable};
 /// 
 /// To use this struct, you need to create a new account with the data you get from the auth process.
 /// # Example
-/// ```
+/// ```no_run
 /// use reqwest::Client;
 /// use reginleif::auth::account::Account;
 /// use reginleif::auth::microsoft::{DeviceCode, MicrosoftAuthError};

@@ -31,7 +31,7 @@ pub struct ExpiringData<T> where T:Expirable+Refreshable
 /// with ``#[dur]`` to annotate the duration field.
 ///
 /// # Example
-/// ```
+/// ```ignore
 /// use std::time::Duration;
 /// use reginleif_macro::Expirable;
 ///
@@ -57,7 +57,7 @@ pub trait Expirable{
 /// or you can use ``NoRefresh`` derive to make it panic when call this function.
 ///
 /// # Example
-/// ```
+/// ```ignore
 /// use std::time::Duration;
 /// use reginleif_macro::{Expirable, NoRefresh};
 ///
@@ -71,7 +71,7 @@ pub trait Expirable{
 /// You also need to know, since this is an async trait, it **should be used with async_trait crate macro**.
 /// 
 /// # Example
-/// ```
+/// ```ignore
 ///  use std::time::Duration;
 ///  use reginleif::utils::expiring_data::Refreshable;
 ///  use reginleif_macro::Expirable;

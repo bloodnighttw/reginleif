@@ -100,7 +100,7 @@ impl DeviceCode{
     /// * Return anyhow::Result<DeviceCode>
     ///
     /// # Example
-    /// ```
+    /// ```no_run
     /// use reqwest::Client;
     /// use reginleif::auth::microsoft::DeviceCode;
     ///
@@ -147,7 +147,7 @@ impl DeviceCode{
     /// * Return Result<MicrosoftAuthResponse,MicrosoftAuthError>
     ///
     /// # Example
-    /// ```
+    /// ```no_run
     /// use reqwest::Client;
     /// use reginleif::auth::microsoft::DeviceCode;
     /// use reginleif::auth::microsoft::{MicrosoftAuthError, MicrosoftAuth};
@@ -254,17 +254,18 @@ impl Refreshable for MicrosoftAuth{
     /// 
     /// # Examples 
     /// 
-    /// ```
-    /// 
+    /// ```no_run
+    ///
     /// use std::time::Duration; 
     /// use reginleif::auth::microsoft::MicrosoftAuthError;
-    /// 
+    ///
     /// #[tokio::main]
     /// async fn main(){
     ///
+    ///  use reginleif::auth::microsoft::DeviceCode;
     ///  let client = reqwest::Client::new();    /// 
-    ///  let client_id = "47f3e635-2886-4628-a1c2-fd8a9f4d7a5f";
-    ///  let res = super::DeviceCode::fetch(&client,client_id).await;
+    ///  let client_id = "your client id here";
+    ///  let res = DeviceCode::fetch(&client,client_id).await;
     ///
     ///  let device_code = match res{
     ///     Ok(device_code) => { 
