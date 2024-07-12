@@ -14,12 +14,12 @@ use crate::utils::serde_convert::{duration_to_sec, sec_to_duration};
 /// This struct is used to authenticate the user with Minecraft Auth Server.
 #[derive(Serialize, Deserialize,Debug,Clone, Expirable, NoRefresh)]
 pub struct MinecraftAuth {
-    username: String,
-    access_token: String,
+    pub username: String,
+    pub access_token: String,
     #[serde(deserialize_with = "sec_to_duration", serialize_with = "duration_to_sec")]
     #[dur]
-    expires_in: Duration,
-    token_type: String,
+    pub expires_in: Duration,
+    pub token_type: String,
 }
 
 impl MinecraftAuth{
