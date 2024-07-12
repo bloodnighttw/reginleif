@@ -8,6 +8,7 @@ use crate::auth::xbox::XboxSecurityError::Others;
 /// Xbox Live Token
 /// 
 /// This token is used to authenticate with Xbox Security Token.
+#[derive(Debug)]
 pub struct XboxLiveToken(String);
 
 impl From<&str> for XboxLiveToken {
@@ -65,6 +66,7 @@ impl XboxLiveToken {
 /// Xbox Security Token
 /// 
 /// This token is used to authenticate the user with Minecraft Auth Server.
+#[derive(Debug)]
 pub struct XboxSecurityToken{
     token: String,
     uhs: String,
@@ -111,7 +113,7 @@ impl XboxSecurityToken{
     /// # Arguments
     /// * `client` - The reqwest client
     /// * `token` - The Xbox Live Token you get from [XboxLiveToken::fetch](XboxLiveToken::fetch)
-    pub async fn fetch(client:&Client,token:&XboxLiveToken) -> Result<XboxSecurityToken,XboxSecurityError> {
+    pub async fn fetch(client:&Client,token:XboxLiveToken) -> Result<XboxSecurityToken,XboxSecurityError> {
 
         let xbox_authenticate_json = json!({
             "Properties": {
