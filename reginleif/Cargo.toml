@@ -12,7 +12,7 @@ serde_with = "3.8.3"
 serde_json = "1.0.120"
 anyhow = "1.0.86"
 tokio = {  version = "1.38.0", features = ["full"] }
-reginleif-macro = {path = "../reginleif-macro"}
+reginleif-macro = {path = "../reginleif-macro", version = "0.1.0"}
 async-trait = "0.1.81"
 reqwest = { version = "0.12.5", features = ["json"] }
 thiserror = "1.0.61"
