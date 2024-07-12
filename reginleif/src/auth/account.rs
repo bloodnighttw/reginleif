@@ -1,6 +1,7 @@
 use std::time::Duration;
 use async_trait::async_trait;
 use reqwest::Client;
+use serde::{Deserialize, Serialize};
 use crate::auth::microsoft::MicrosoftAuth;
 use crate::auth::minecraft::{MinecraftAuth, Profile};
 use crate::auth::xbox::{XboxLiveToken, XboxSecurityToken};
@@ -79,7 +80,7 @@ use crate::utils::expiring_data::{Expirable, ExpiringData, Refreshable};
 ///        let account:Account = (minecraft_auth,profile,res.clone()).into(); // convert into Account
 ///
 /// }
-#[derive(Debug,Clone)]
+#[derive(Debug,Clone,Serialize,Deserialize)]
 pub struct Account{
     pub mc_auth:MinecraftAuth,
     pub profile:Profile,
