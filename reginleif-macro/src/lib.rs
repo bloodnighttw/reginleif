@@ -16,7 +16,7 @@ fn impl_expire(ast:ItemStruct) -> TokenStream{
     let ident2 = duration_filed.ident.clone().unwrap();
 
     let token = quote::quote! {
-        impl crate::utils::expiring_data::Expirable for #ident{
+        impl reginleif::utils::expiring_data::Expirable for #ident{
             fn get_duration(&self) -> std::time::Duration {
                 self.#ident2
             }
@@ -40,7 +40,7 @@ pub fn refresh_panic(item:TokenStream) -> TokenStream{
     let ident = ast.ident;
     let token = quote::quote! {
         #[async_trait::async_trait]
-        impl crate::utils::expiring_data::Refreshable for #ident{
+        impl reginleif::utils::expiring_data::Refreshable for #ident{
             
             type Args = ();
 
