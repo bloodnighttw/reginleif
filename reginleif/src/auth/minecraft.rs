@@ -5,7 +5,7 @@ use serde_json::json;
 use reginleif_macro::{Expirable, NoRefresh};
 use crate::auth::constant::{MINECRAFT_LOGIN_WITH_XBOX, MINECRAFT_PROFILE};
 use crate::auth::xbox::XboxSecurityToken;
-use crate::utils::serde_convert::{duration_to_sec, sec_to_duration};
+use reginleif_utils::serde_convert::{duration_to_sec, sec_to_duration};
 
 /// Minecraft Auth
 /// 

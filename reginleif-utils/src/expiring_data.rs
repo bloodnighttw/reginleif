@@ -1,7 +1,7 @@
 use std::time::Duration;
 use chrono::Local;
 use serde::{Deserialize, Serialize};
-use crate::utils::serde_convert::{local_to_string, string_to_local};
+use crate::serde_convert::{local_to_string, string_to_local};
 use anyhow::Result;
 use async_trait::async_trait;
 
@@ -159,7 +159,7 @@ impl<T> From<T> for ExpiringData<T> where T:Expirable + Refreshable{
 mod test{
     use std::time::Duration;
     use reginleif_macro::{Expirable, NoRefresh};
-    use crate::utils::expiring_data::{ExpiringData, Refreshable};
+    use crate::expiring_data::{ExpiringData, Refreshable};
 
     #[derive(Expirable,NoRefresh,Default)]
     struct TestStruct1{

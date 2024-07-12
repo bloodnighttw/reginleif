@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use crate::auth::microsoft::MicrosoftAuth;
 use crate::auth::minecraft::{MinecraftAuth, Profile};
 use crate::auth::xbox::{XboxLiveToken, XboxSecurityToken};
-use crate::utils::expiring_data::{Expirable, ExpiringData, Refreshable};
+use reginleif_utils::expiring_data::{Expirable, ExpiringData, Refreshable};
 
 
 /// Account

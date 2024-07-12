@@ -15,7 +15,7 @@ mod test{
     use crate::auth::microsoft::{DeviceCode, MicrosoftAuthError};
     use crate::auth::minecraft::{MinecraftAuth, Profile};
     use crate::auth::xbox::{XboxLiveToken, XboxSecurityToken};
-    use crate::utils::expiring_data::ExpiringData;
+    use reginleif_utils::expiring_data::ExpiringData;
 
     #[tokio::test]
     #[ignore]

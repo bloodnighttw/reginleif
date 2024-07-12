@@ -5,10 +5,10 @@ use reqwest::Client;
 use reqwest::header::CONTENT_TYPE;
 use serde_json::Value;
 use reginleif_macro::{Expirable, NoRefresh};
-use crate::utils::serde_convert::{duration_to_sec, sec_to_duration};
+use reginleif_utils::serde_convert::{duration_to_sec, sec_to_duration};
 use thiserror::Error;
 use crate::auth::constant::{DEVICECODE_URL, GRANT_TYPE, REFRESH_GRANT_TYPE, SCOPE, TOKEN_URL};
-use crate::utils::expiring_data::{ExpiringData, Refreshable};
+use reginleif_utils::expiring_data::{ExpiringData, Refreshable};
 
 /// The struct contain all the information that oauth2 device code auth flow need.
 /// 
