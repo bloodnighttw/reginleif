@@ -6,7 +6,6 @@ use reginleif_macro::{Expirable, NoRefresh};
 use crate::auth::constant::{MINECRAFT_LOGIN_WITH_XBOX, MINECRAFT_PROFILE};
 use crate::auth::microsoft::MicrosoftAuth;
 use crate::auth::xbox::XboxSecurityToken;
-use crate::utils::expiring_data::{Expirable, ExpiringData, Refreshable};
 use crate::utils::serde_convert::{duration_to_sec, sec_to_duration};
 
 /// Minecraft Auth
