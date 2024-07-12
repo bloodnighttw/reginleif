@@ -69,8 +69,8 @@ impl Profile{
     /// 
     /// # Arguments
     /// * `client` - The reqwest client
-    /// * `microsoft_auth` - The Microsoft Auth you get from [MicrosoftAuth::fetch](crate::auth::minecraft::MinecraftAuth::fetch)
-    pub async fn fetch(&self, client: &Client, microsoft_auth: &MicrosoftAuth) -> anyhow::Result<Profile>{
+    /// * `microsoft_auth` - The Microsoft Auth you get from [MinecraftAuth::fetch](crate::auth::minecraft::MinecraftAuth::fetch)
+    pub async fn fetch(client: &Client, microsoft_auth: &MinecraftAuth) -> anyhow::Result<Profile>{
         let res = client
             .get(MINECRAFT_PROFILE)
             .bearer_auth(&microsoft_auth.access_token)
