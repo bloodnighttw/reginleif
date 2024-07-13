@@ -1,5 +1,5 @@
 use proc_macro::TokenStream;
-use syn::ItemStruct;
+use syn::{DeriveInput, ItemStruct, Meta};
 
 fn impl_expire(ast:ItemStruct) -> TokenStream{
     let ident = ast.ident;
@@ -51,4 +51,151 @@ pub fn refresh_panic(item:TokenStream) -> TokenStream{
     };
     
     token.into()
+}
+
+#[proc_macro_derive(BaseStorePoint)]
+pub fn base_store_point(item:TokenStream) -> TokenStream{
+    let ast:ItemStruct = syn::parse(item).unwrap();
+    let ident = ast.ident;
+    let token = quote::quote! {
+        impl reginleif_utils::save_path::BaseStorePoint for #ident{
+            fn get_base(&self) -> std::path::PathBuf {
+                self.0.clone()
+            }
+        }
+    };
+
+    token.into()
+}
+
+fn impl_storage(ast:DeriveInput) -> TokenStream{
+    let ident = ast.ident;
+    let attr1 = ast.attrs.iter().filter(
+        |x| x.path().is_ident("base_on")
+    ).nth(0).expect("required #[base_on(BaseStorePoint)] to use this derive!");
+
+    let attr1 = match &attr1.meta {
+        Meta::List(a) => a.tokens.clone(),
+        _o=> panic!("error while parsing argument!")
+    };
+
+    let attr2 = ast.attrs.iter().filter(
+        |x| x.path().is_ident("filepath")
+    ).nth(0).expect("required #[filepath(&'static [&static str])] to use this derive!");
+
+    let attr2 = match &attr2.meta {
+        Meta::List(a) => a.tokens.clone(),
+        _o=> panic!("error while parsing argument!")
+    };
+
+    let token = quote::quote! {
+        impl reginleif_utils::save_path::Store<'_> for #ident{
+            const FILE_PATH: &'static [&'static str] = #attr2;
+            type AcceptStorePoint = #attr1;
+            type SelfType = Self;
+
+            fn save(&self, base: &Self::AcceptStorePoint) -> anyhow::Result<()> {
+                let base_path = Self::full_path(&base);
+
+                std::fs::create_dir_all(base_path.parent().ok_or(anyhow::anyhow!("No parent"))?)?;
+                std::fs::write(base_path,serde_json::to_string(self)?.as_bytes())?;
+
+                Ok(())
+
+            }
+
+            fn load(base: &Self::AcceptStorePoint) -> anyhow::Result<Self> {
+
+                let base_path = Self::full_path(&base);
+
+                let json = std::fs::read_to_string(base_path)?;
+                Ok(serde_json::from_str(&json)?)
+            }
+
+        }
+    };
+
+    token.into()
+}
+
+#[proc_macro_derive(Storage, attributes(base_on,filepath))]
+pub fn storage(item: TokenStream) -> TokenStream {
+    let ast:DeriveInput = syn::parse(item).unwrap();
+    let implement = impl_storage(ast);
+    implement
+}
+
+fn impl_save(ast: DeriveInput) -> TokenStream{
+    let ident = ast.ident;
+    let attr1 = ast.attrs.iter().filter(
+        |x| x.path().is_ident("base_on")
+    ).nth(0).expect("required #[base_on(BaseStorePoint)] to use this derive!");
+
+    let attr1 = match &attr1.meta {
+        Meta::List(a) => a.tokens.clone(),
+        _o=> panic!("error while parsing argument!")
+    };
+
+    let token = quote::quote! {
+        impl reginleif_utils::save_path::Save for #ident{
+            type AcceptStorePoint = #attr1;
+
+            fn save(&self, base: &Self::AcceptStorePoint) -> anyhow::Result<()> {
+
+                let base_path = base.get_base().join(&self.get_suffix());
+
+                std::fs::create_dir_all(base_path.parent().ok_or(anyhow::anyhow!("No parent"))?)?;
+                std::fs::write(base_path,serde_json::to_string(self)?.as_bytes())?;
+
+                Ok(())
+            }
+        }
+    };
+
+    token.into()
+
+}
+
+#[proc_macro_derive(Save, attributes(base_on))]
+pub fn save(item: TokenStream) -> TokenStream {
+    let ast:DeriveInput = syn::parse(item).unwrap();
+    let implement = impl_save(ast);
+    implement
+}
+
+fn impl_load(ast: DeriveInput) -> TokenStream{
+    let ident = ast.ident;
+    let attr1 = ast.attrs.iter().filter(
+        |x| x.path().is_ident("base_on")
+    ).nth(0).expect("required #[base_on(BaseStorePoint)] to use this derive!");
+
+    let attr1 = match &attr1.meta {
+        Meta::List(a) => a.tokens.clone(),
+        _o=> panic!("error while parsing argument!")
+    };
+
+    let token = quote::quote! {
+        impl reginleif_utils::save_path::Load<'_> for #ident{
+            type AcceptStorePoint = #attr1;
+            type SelfType = Self;
+
+            fn load<P: AsRef<Path>>(base: &Self::AcceptStorePoint,suffix:P) -> anyhow::Result<Self>{
+                let path = base.get_base().join(suffix);
+                let content = std::fs::read_to_string(path)?;
+                let json = serde_json::from_str::<Self>(&content)?;
+                Ok(json)
+            }
+        }
+    };
+
+    token.into()
+
+}
+
+
+#[proc_macro_derive(Load, attributes(base_on))]
+pub fn load(item: TokenStream) -> TokenStream {
+    let ast:DeriveInput = syn::parse(item).unwrap();
+    let implement = impl_load(ast);
+    implement
 }

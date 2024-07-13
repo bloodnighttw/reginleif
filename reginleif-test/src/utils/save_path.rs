@@ -1,17 +1,13 @@
+#[cfg(test)]
 mod test{
-    use std::path::PathBuf;
+    use std::path::{Path, PathBuf};
     use serde::{Deserialize, Serialize};
-    use reginleif_utils::save_path::{BaseStorePoint, Store};
+    use reginleif_macro::{BaseStorePoint, Load, Save, Storage};
+    use reginleif_utils::save_path::{BaseStorePoint, ExpandStorePoint, Load, Save, Store};
 
-    const TEST_PATH_CONST:&'static[&'static str] = &["test"];
 
+    #[derive(BaseStorePoint)]
     struct TestPath(PathBuf);
-
-    impl BaseStorePoint for TestPath{
-        fn get_base(&self) -> PathBuf {
-            self.0.clone()
-        }
-    }
 
     impl From<PathBuf> for TestPath{
         fn from(path:PathBuf) -> Self{
@@ -19,46 +15,42 @@ mod test{
         }
     }
 
-    #[derive(Deserialize,Serialize,PartialEq,Debug)]
+    #[derive(Deserialize,Serialize,PartialEq,Debug,Storage)]
+    #[base_on(TestPath)] #[filepath(&["test.txt"])]
     struct A;
 
-    impl Store<'_> for A{
-        const FILE_PATH: &'static [&'static str] = TEST_PATH_CONST;
-        type AcceptStorePoint = TestPath;
-        type SelfType = Self;
-
-        fn save(&self, base: &Self::AcceptStorePoint) -> anyhow::Result<()> {
-            let base_path = Self::full_path(&base);
-
-            std::fs::create_dir_all(base_path.parent().ok_or(anyhow::anyhow!("No parent"))?)?;
-            std::fs::write(base_path,serde_json::to_string(self)?.as_bytes())?;
-
-            Ok(())
-
-        }
-
-        fn load(base: &Self::AcceptStorePoint) -> anyhow::Result<Self> {
-
-            let base_path = Self::full_path(&base);
-
-            let json = std::fs::read_to_string(base_path)?;
-            Ok(serde_json::from_str(&json)?)
-        }
-
-    }
-
     #[tokio::test]
-    async fn test_save_load(){
+    async fn test_static_save_load(){
         let path = PathBuf::from("test");
         let test_path = TestPath::from(path.clone());
         let a = A;
         a.save(&test_path).unwrap();
         let b = A::load(&test_path).unwrap();
         assert_eq!(a,b);
-        
-        tokio::fs::remove_file(path).await.unwrap();
+
+        tokio::fs::remove_dir_all(path).await.unwrap();
     }
 
+    #[derive(Serialize,Deserialize,Save,Load,PartialEq,Debug)]
+    #[base_on(TestPath)]
+    struct B;
 
+    impl ExpandStorePoint for B{
+        fn get_suffix(&self) -> PathBuf {
+            PathBuf::from("test223.txt")
+        }
+    }
+
+    #[tokio::test]
+    async fn test_dynamic_save_load(){
+        let path = PathBuf::from("test");
+        let test_path = TestPath::from(path.clone());
+        let b = B;
+        b.save(&test_path).unwrap();
+
+        let temp = B::load(&test_path,"test223.txt").unwrap();
+        assert_eq!(b,temp);
+
+    }
 
 }
