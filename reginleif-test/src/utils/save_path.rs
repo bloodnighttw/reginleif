@@ -1,12 +1,13 @@
 #[cfg(test)]
 mod test{
+    use std::marker::PhantomData;
     use std::path::{PathBuf};
     use serde::{Deserialize, Serialize};
     use reginleif_macro::{BaseStorePoint, Load, Save, Storage};
-    use reginleif_utils::save_path::{ExpandStorePoint, Load, Save, Store};
+    use reginleif_utils::save_path::{BaseStorePoint, ExpandStorePoint, Load, Save, Store};
 
 
-    #[derive(BaseStorePoint)]
+    #[derive(BaseStorePoint,PartialEq,Debug)]
     struct TestPath(PathBuf);
 
     impl From<PathBuf> for TestPath{
@@ -21,7 +22,7 @@ mod test{
 
     #[tokio::test]
     async fn test_static_save_load(){
-        let path = PathBuf::from("test");
+        let path = PathBuf::from("test1");
         let test_path = TestPath::from(path.clone());
         let a = A;
         a.save(&test_path).unwrap();
@@ -43,13 +44,75 @@ mod test{
 
     #[tokio::test]
     async fn test_dynamic_save_load(){
-        let path = PathBuf::from("test");
+        let path = PathBuf::from("test2");
         let test_path = TestPath::from(path.clone());
         let b = B;
         b.save(&test_path).unwrap();
 
         let temp = B::load(&test_path,"test223.txt").unwrap();
         assert_eq!(b,temp);
+
+        tokio::fs::remove_dir_all(path).await.unwrap();
+
     }
+
+    #[derive(Serialize,Deserialize,PartialEq,Debug)]
+    struct C<T> where T:BaseStorePoint{
+        num:String,
+        _t:PhantomData<T>
+    }
+
+    impl <T> ExpandStorePoint for C<T> where T:BaseStorePoint{
+        fn get_suffix(&self) -> PathBuf {
+            PathBuf::from(&format!("{}.txt",&self.num))
+        }
+    }
+
+    impl <T> Save for C<T> where T:BaseStorePoint{
+        type AcceptStorePoint = T;
+    }
+
+    impl <T> Load for C<T> where T:BaseStorePoint{
+        type AcceptStorePoint = T;
+        type SelfType = Self;
+    }
+
+    type D = C<TestPath>;
+
+    impl From<String> for D{
+        fn from(value: String) -> Self {
+            Self{
+                num: value,
+                _t: Default::default(),
+            }
+        }
+    }
+
+    #[tokio::test]
+    async fn generic_test(){
+        let path = PathBuf::from("test3");
+        let test_path = TestPath::from(path.clone());
+        let d:D = String::from("123").into();
+        d.save(&test_path).unwrap();
+
+        let temp = D::load(&test_path,"123.txt").unwrap();
+        assert_eq!(d,temp);
+
+        tokio::fs::remove_dir_all(path).await.unwrap();
+    }
+
+
+    #[derive(Serialize,Deserialize,PartialEq,Debug,Save,Load)]
+    struct E<T> where T:BaseStorePoint{
+        num:String,
+        _t:PhantomData<T>
+    }
+
+    impl <T> ExpandStorePoint for E<T> where T:BaseStorePoint{
+        fn get_suffix(&self) -> PathBuf {
+            PathBuf::from(&format!("{}.txt",&self.num))
+        }
+    }
+
 
 }

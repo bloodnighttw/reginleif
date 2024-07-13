@@ -70,33 +70,48 @@ pub fn base_store_point(item:TokenStream) -> TokenStream{
 
 fn impl_storage(ast:DeriveInput) -> TokenStream{
     let ident = ast.ident;
-    let attr1 = ast.attrs.iter().filter(
-        |x| x.path().is_ident("base_on")
-    ).nth(0).expect("required #[base_on(BaseStorePoint)] to use this derive!");
 
-    let attr1 = match &attr1.meta {
-        Meta::List(a) => a.tokens.clone(),
-        _o=> panic!("error while parsing argument!")
-    };
-
-    let attr2 = ast.attrs.iter().filter(
+    let filepath = ast.attrs.iter().filter(
         |x| x.path().is_ident("filepath")
     ).nth(0).expect("required #[filepath(&'static [&static str])] to use this derive!");
 
-    let attr2 = match &attr2.meta {
+    let filepath = match &filepath.meta {
         Meta::List(a) => a.tokens.clone(),
         _o=> panic!("error while parsing argument!")
     };
 
-    let token = quote::quote! {
-        impl reginleif_utils::save_path::Store for #ident{
-            const FILE_PATH: &'static [&'static str] = #attr2;
-            type AcceptStorePoint = #attr1;
-            type SelfType = Self;
-        }
-    };
+    let base_on = ast.attrs.iter().filter(
+        |x| x.path().is_ident("base_on")
+    ).nth(0);
 
-    token.into()
+    return if let Some(base_on) = base_on {
+        let base_on = match &base_on.meta {
+            Meta::List(a) => a.tokens.clone(),
+            _o=> panic!("error while parsing argument!")
+        };
+
+
+        let token = quote::quote! {
+            impl reginleif_utils::save_path::Store for #ident{
+                const FILE_PATH: &'static [&'static str] = #filepath;
+                type AcceptStorePoint = #base_on;
+                type SelfType = Self;
+            }
+        };
+        token.into()
+    }else{ // this mean we are declared a generic struct.
+        let token = quote::quote! {
+            impl<T> reginleif_utils::save_path::Store for #ident<T>
+            where T: reginleif_utils::save_path::BaseStorePoint{
+                const FILE_PATH: &'static [&'static str] = #filepath;
+                type AcceptStorePoint = T;
+                type SelfType = Self;
+            }
+        };
+        token.into()
+
+    }
+
 }
 
 #[proc_macro_derive(Storage, attributes(base_on,filepath))]
@@ -108,22 +123,33 @@ pub fn storage(item: TokenStream) -> TokenStream {
 
 fn impl_save(ast: DeriveInput) -> TokenStream{
     let ident = ast.ident;
-    let attr1 = ast.attrs.iter().filter(
+    let base_on = ast.attrs.iter().filter(
         |x| x.path().is_ident("base_on")
-    ).nth(0).expect("required #[base_on(BaseStorePoint)] to use this derive!");
+    ).nth(0);
 
-    let attr1 = match &attr1.meta {
-        Meta::List(a) => a.tokens.clone(),
-        _o=> panic!("error while parsing argument!")
-    };
+    if let Some(base_on) = base_on {
+        let base_on = match &base_on.meta {
+            Meta::List(a) => a.tokens.clone(),
+            _o=> panic!("error while parsing argument!")
+        };
 
-    let token = quote::quote! {
-        impl reginleif_utils::save_path::Save for #ident{
-            type AcceptStorePoint = #attr1;
-        }
-    };
+        let token = quote::quote! {
+            impl reginleif_utils::save_path::Save for #ident{
+                type AcceptStorePoint = #base_on;
+            }
+        };
 
-    token.into()
+        token.into()
+    } else { // this mean we are declared a generic struct.
+        let token = quote::quote! {
+            impl<T> reginleif_utils::save_path::Save for #ident<T>
+            where T: reginleif_utils::save_path::BaseStorePoint{
+                type AcceptStorePoint = T;
+            }
+        };
+
+        token.into()
+    }
 
 }
 
@@ -136,23 +162,36 @@ pub fn save(item: TokenStream) -> TokenStream {
 
 fn impl_load(ast: DeriveInput) -> TokenStream{
     let ident = ast.ident;
-    let attr1 = ast.attrs.iter().filter(
+    let base_on = ast.attrs.iter().filter(
         |x| x.path().is_ident("base_on")
-    ).nth(0).expect("required #[base_on(BaseStorePoint)] to use this derive!");
+    ).nth(0);
 
-    let attr1 = match &attr1.meta {
-        Meta::List(a) => a.tokens.clone(),
-        _o=> panic!("error while parsing argument!")
-    };
+     if let Some(base_on) = base_on {
+        let base_on = match &base_on.meta {
+            Meta::List(a) => a.tokens.clone(),
+            _o=> panic!("error while parsing argument!")
+        };
 
-    let token = quote::quote! {
-        impl reginleif_utils::save_path::Load for #ident{
-            type AcceptStorePoint = #attr1;
-            type SelfType = Self;
-        }
-    };
+        let token = quote::quote! {
+            impl reginleif_utils::save_path::Load for #ident{
+                type AcceptStorePoint = #base_on;
+                type SelfType = Self;
+            }
+        };
 
-    token.into()
+        token.into()
+    } else { // this mean we are declared a generic struct.
+        let token = quote::quote! {
+            impl<T> reginleif_utils::save_path::Load for #ident<T>
+            where T: reginleif_utils::save_path::BaseStorePoint{
+                type AcceptStorePoint = T;
+                type SelfType = Self;
+            }
+        };
+
+        token.into()
+
+    }
 
 }
 
