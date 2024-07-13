@@ -95,7 +95,6 @@ fn impl_storage(ast:DeriveInput) -> TokenStream{
             impl reginleif_utils::save_path::Store for #ident{
                 const FILE_PATH: &'static [&'static str] = #filepath;
                 type AcceptStorePoint = #base_on;
-                type SelfType = Self;
             }
         };
         token.into()
@@ -105,7 +104,6 @@ fn impl_storage(ast:DeriveInput) -> TokenStream{
             where T: reginleif_utils::save_path::BaseStorePoint{
                 const FILE_PATH: &'static [&'static str] = #filepath;
                 type AcceptStorePoint = T;
-                type SelfType = Self;
             }
         };
         token.into()
@@ -175,7 +173,6 @@ fn impl_load(ast: DeriveInput) -> TokenStream{
         let token = quote::quote! {
             impl reginleif_utils::save_path::Load for #ident{
                 type AcceptStorePoint = #base_on;
-                type SelfType = Self;
             }
         };
 
@@ -185,7 +182,6 @@ fn impl_load(ast: DeriveInput) -> TokenStream{
             impl<T> reginleif_utils::save_path::Load for #ident<T>
             where T: reginleif_utils::save_path::BaseStorePoint{
                 type AcceptStorePoint = T;
-                type SelfType = Self;
             }
         };
 

@@ -74,7 +74,6 @@ mod test{
 
     impl <T> Load for C<T> where T:BaseStorePoint{
         type AcceptStorePoint = T;
-        type SelfType = Self;
     }
 
     type D = C<TestPath>;
