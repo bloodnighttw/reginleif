@@ -108,6 +108,7 @@ pub trait ExpandStorePoint{
 /// }
 ///
 /// #[derive(Deserialize,Serialize,PartialEq,Debug,Storage)]
+/// #[filepath(&["test.txt"])]
 /// struct A<T> where T:BaseStorePoint{
 ///     num:String,
 ///     _t:PhantomData<T>
@@ -174,6 +175,15 @@ pub trait Store:Serialize+DeserializeOwned{
 /// use serde::{Deserialize, Serialize};
 /// use reginleif_macro::{BaseStorePoint, Save, Load};
 /// use reginleif_utils::save_path::{ExpandStorePoint, Save, Load};
+///
+/// #[derive(BaseStorePoint,PartialEq,Debug)]
+/// struct TestPath(PathBuf);
+///
+/// impl From<PathBuf> for TestPath{
+///     fn from(path:PathBuf) -> Self{
+///         Self(path)
+///     }
+/// }
 ///
 /// #[derive(Serialize,Deserialize,Save,Load,PartialEq,Debug)]
 /// #[base_on(TestPath)]
@@ -254,6 +264,15 @@ pub trait Save:ExpandStorePoint+Serialize{
 /// use serde::{Deserialize, Serialize};
 /// use reginleif_macro::{BaseStorePoint, Save, Load};
 /// use reginleif_utils::save_path::{ExpandStorePoint, Save, Load};
+///
+/// #[derive(BaseStorePoint,PartialEq,Debug)]
+/// struct TestPath(PathBuf);
+///
+/// impl From<PathBuf> for TestPath{
+///     fn from(path:PathBuf) -> Self{
+///         Self(path)
+///     }
+/// }
 ///
 /// #[derive(Serialize,Deserialize,Save,Load,PartialEq,Debug)]
 /// #[base_on(TestPath)]
