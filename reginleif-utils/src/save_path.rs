@@ -1,5 +1,5 @@
 use std::path::{Path, PathBuf};
-use serde::{Deserialize, Serialize};
+use serde::{Serialize};
 use serde::de::DeserializeOwned;
 
 pub trait BaseStorePoint:Sync+Send{
@@ -11,7 +11,7 @@ pub trait ExpandStorePoint{
     fn get_suffix(&self) -> PathBuf;
 }
 
-pub trait Store<'a>:Serialize+Deserialize<'a>{
+pub trait Store:Serialize+DeserializeOwned{
 
     const FILE_PATH:&'static [&'static str];
     /// The type of the base path you have to accept.
@@ -27,8 +27,23 @@ pub trait Store<'a>:Serialize+Deserialize<'a>{
         base_path
     }
 
-    fn save(&self,base:&Self::AcceptStorePoint) -> anyhow::Result<()>;
-    fn load(base:&Self::AcceptStorePoint) -> anyhow::Result<Self::SelfType>;
+    fn save(&self, base: &Self::AcceptStorePoint) -> anyhow::Result<()> {
+        let base_path = Self::full_path(&base);
+
+        std::fs::create_dir_all(base_path.parent().ok_or(anyhow::anyhow!("No parent"))?)?;
+        std::fs::write(base_path,serde_json::to_string(self)?.as_bytes())?;
+
+        Ok(())
+
+    }
+
+    fn load(base: &Self::AcceptStorePoint) -> anyhow::Result<Self> {
+
+        let base_path = Self::full_path(&base);
+
+        let json = std::fs::read_to_string(base_path)?;
+        Ok(serde_json::from_str(&json)?)
+    }
 }
 
 pub trait Save:ExpandStorePoint+Serialize{
@@ -46,7 +61,7 @@ pub trait Save:ExpandStorePoint+Serialize{
     }
 }
 
-pub trait Load<'a>:DeserializeOwned{
+pub trait Load:DeserializeOwned{
 
     /// The type of the base path you have to accept.
     type AcceptStorePoint:BaseStorePoint;

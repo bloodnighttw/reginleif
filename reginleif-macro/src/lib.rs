@@ -89,29 +89,10 @@ fn impl_storage(ast:DeriveInput) -> TokenStream{
     };
 
     let token = quote::quote! {
-        impl reginleif_utils::save_path::Store<'_> for #ident{
+        impl reginleif_utils::save_path::Store for #ident{
             const FILE_PATH: &'static [&'static str] = #attr2;
             type AcceptStorePoint = #attr1;
             type SelfType = Self;
-
-            fn save(&self, base: &Self::AcceptStorePoint) -> anyhow::Result<()> {
-                let base_path = Self::full_path(&base);
-
-                std::fs::create_dir_all(base_path.parent().ok_or(anyhow::anyhow!("No parent"))?)?;
-                std::fs::write(base_path,serde_json::to_string(self)?.as_bytes())?;
-
-                Ok(())
-
-            }
-
-            fn load(base: &Self::AcceptStorePoint) -> anyhow::Result<Self> {
-
-                let base_path = Self::full_path(&base);
-
-                let json = std::fs::read_to_string(base_path)?;
-                Ok(serde_json::from_str(&json)?)
-            }
-
         }
     };
 
@@ -165,7 +146,7 @@ fn impl_load(ast: DeriveInput) -> TokenStream{
     };
 
     let token = quote::quote! {
-        impl reginleif_utils::save_path::Load<'_> for #ident{
+        impl reginleif_utils::save_path::Load for #ident{
             type AcceptStorePoint = #attr1;
             type SelfType = Self;
         }
