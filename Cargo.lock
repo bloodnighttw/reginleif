@@ -756,6 +756,8 @@ dependencies = [
  "reginleif-macro",
  "reginleif-utils",
  "reqwest",
+ "serde",
+ "serde_json",
  "tokio",
 ]
 
