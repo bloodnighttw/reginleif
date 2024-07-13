@@ -1,6 +1,6 @@
 use std::path::{Path, PathBuf};
 use serde::{Deserialize, Serialize};
-
+use serde::de::DeserializeOwned;
 
 pub trait BaseStorePoint:Sync+Send{
     /// Get the path of the data.
@@ -36,14 +36,27 @@ pub trait Save:ExpandStorePoint+Serialize{
     /// The type of the base path you have to accept.
     type AcceptStorePoint:BaseStorePoint;
 
-    fn save(&self, save:&Self::AcceptStorePoint) -> anyhow::Result<()>;
+    fn save(&self, base:&Self::AcceptStorePoint) -> anyhow::Result<()>{
+        let base_path = base.get_base().join(&self.get_suffix());
+
+        std::fs::create_dir_all(base_path.parent().ok_or(anyhow::anyhow!("No parent"))?)?;
+        std::fs::write(base_path,serde_json::to_string(self)?.as_bytes())?;
+
+        Ok(())
+    }
 }
 
-pub trait Load<'a>:Deserialize<'a>{
+pub trait Load<'a>:DeserializeOwned{
 
     /// The type of the base path you have to accept.
     type AcceptStorePoint:BaseStorePoint;
-    type SelfType;
+    type SelfType:DeserializeOwned;
 
-    fn load<P: AsRef<Path>>(base:&Self::AcceptStorePoint,suffix:P) -> anyhow::Result<Self::SelfType>;
+    fn load<P: AsRef<Path>>(base: &Self::AcceptStorePoint, suffix: P) -> anyhow::Result<Self::SelfType>{
+        let path = base.get_base().join(suffix);
+        let content = std::fs::read_to_string(path)?;
+        // Remove the explicit lifetime annotation from the call to `serde_json::from_str`
+        let json = serde_json::from_str::<Self::SelfType>(&content)?;
+        Ok(json)
+    }
 }

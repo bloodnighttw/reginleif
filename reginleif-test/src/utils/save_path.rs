@@ -1,9 +1,9 @@
 #[cfg(test)]
 mod test{
-    use std::path::{Path, PathBuf};
+    use std::path::{PathBuf};
     use serde::{Deserialize, Serialize};
     use reginleif_macro::{BaseStorePoint, Load, Save, Storage};
-    use reginleif_utils::save_path::{BaseStorePoint, ExpandStorePoint, Load, Save, Store};
+    use reginleif_utils::save_path::{ExpandStorePoint, Load, Save, Store};
 
 
     #[derive(BaseStorePoint)]
@@ -50,7 +50,6 @@ mod test{
 
         let temp = B::load(&test_path,"test223.txt").unwrap();
         assert_eq!(b,temp);
-
     }
 
 }
