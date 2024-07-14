@@ -1,30 +1,35 @@
-use std::array::TryFromSliceError;
+//! This module contains the SHA struct and the TryFrom implementation for SHA.
+//! You can use this struct to store SHA1 and SHA256,
+//! and you can convert &str to SHA by using TryFrom trait.
+
 use std::num::ParseIntError;
-use thiserror::Error;
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
-#[derive(Debug)]
+/// SHA enum
+#[derive(Debug,PartialEq)]
 pub enum SHA{
-    SHA1([u8;20]),
-    SHA256([u8;32])
+    SHA1(Vec<u8>),
+    SHA256(Vec<u8>)
 }
 
-#[derive(Debug,Error)]
-pub enum TryFromSHAHexError{
-    #[error("ParseIntError: {0}")]
-    ParseIntError(ParseIntError),
-    #[error("TryFromSliceError: {0}")]
-    TryFromSliceError(TryFromSliceError)
-}
-
-impl From<TryFromSliceError> for TryFromSHAHexError{
-    fn from(value: TryFromSliceError) -> Self {
-        TryFromSHAHexError::TryFromSliceError(value)
+impl Serialize for SHA{
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer
+    {
+        let hex:String = self.into();
+        serializer.serialize_str(hex.as_str())
     }
 }
 
-impl From<ParseIntError> for TryFromSHAHexError{
-    fn from(value: ParseIntError) -> Self {
-        TryFromSHAHexError::ParseIntError(value)
+impl<'de> Deserialize<'de> for SHA{
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>
+    {
+        let string = String::deserialize(deserializer)?;
+        let sha = string.try_into().map_err(serde::de::Error::custom)?;
+        Ok(sha)
     }
 }
 
@@ -37,27 +42,34 @@ fn decode_hex(s: &str) -> Result<Vec<u8>, ParseIntError> {
 
 /// decode hex to array
 impl TryFrom<&str> for SHA{
-    type Error = TryFromSHAHexError;
+    type Error = ParseIntError;
 
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
 
-        if value.len() == 40 {
+        let decode = decode_hex(value)?;
+
+        if decode.len() == 20 {
             let decode = decode_hex(value)?;
-            let convert = decode.iter().as_slice().try_into()?;
-            return Ok(SHA::SHA1(convert))
-        } else if value.len() == 64{
-            let decode = decode_hex(value)?;
-            let convert = decode.iter().as_slice().try_into()?;
-            return Ok(SHA::SHA256(convert))
+            return Ok(SHA::SHA1(decode))
+        } else if decode.len() == 32{
+            return Ok(SHA::SHA256(decode))
         }
 
         unreachable!("This should never be reached, checked your sha");
     }
 }
 
-impl From<SHA> for String{
-    fn from(value: SHA) -> Self {
+impl TryFrom<String> for SHA{
+    type Error = ParseIntError;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        Self::try_from(value.as_str())
+    }
+}
+
+impl From<&SHA> for String{
+    fn from(value: &SHA) -> Self {
         match value {
             SHA::SHA1(v) => {
                 v.iter().map(|x| format!("{:2x}",x)).collect()
@@ -69,6 +81,12 @@ impl From<SHA> for String{
     }
 }
 
+impl From<SHA> for String{
+    fn from(value: SHA) -> Self {
+        Self::from(&value)
+    }
+}
+
 mod test{
     use crate::sha::SHA;
 
@@ -76,10 +94,10 @@ mod test{
     fn test() -> anyhow::Result<()>{
         let sha:SHA = "8ab31282892976da4695f5d721567f9584e1c6e69e9fef637b73f8cdc7adbcef".try_into()?;
         let sha_string2:String = sha.into();
-        
+
         assert_eq!("8ab31282892976da4695f5d721567f9584e1c6e69e9fef637b73f8cdc7adbcef",sha_string2);
-        
+
         Ok(())
-        
+
     }
 }
