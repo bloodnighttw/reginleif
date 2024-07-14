@@ -25,3 +25,5 @@ reqwest = { version = "0.12.5", features = ["json"] }
 thiserror = "1.0.61"
 reginleif-utils = {path = "reginleif-utils", version = "0.2.0-alpha-1"} # Same version as workspace
 reginleif-macro = {path = "reginleif-macro", version = "0.2.0-alpha-1"} # Same version as workspace
+sha2 = "0.10.8"
+sha1 = "0.10.6"

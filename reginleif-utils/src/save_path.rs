@@ -4,6 +4,8 @@
 use std::path::{Path, PathBuf};
 use serde::{Serialize};
 use serde::de::DeserializeOwned;
+use sha1::Digest as Digest1;
+use crate::sha::SHA;
 
 /// A trait for the base path of the data.
 ///
@@ -338,4 +340,68 @@ pub trait Load:DeserializeOwned{
         let json = serde_json::from_str(&content)?;
         Ok(json)
     }
+}
+
+/// private function to handle the file which is not exist.
+async fn handle_file_not_exist(path:&PathBuf, url:&str){
+    tokio::fs::create_dir_all(path.parent().ok_or(anyhow::anyhow!("No parent"))?).await?;
+
+    if !path.exists() { // fetching data
+        let data = reqwest::get(url).await?.bytes().await?;
+        tokio::fs::write(path, data).await?;
+    }
+}
+
+pub trait Cache:DeserializeOwned{
+
+    type AcceptStorePoint:BaseStorePoint;
+
+    /// this will check file exist or not.
+    /// if the file exist, it will return the data from disk.
+    /// if the file not exist, it will fetch the data from the source and save it to the disk, then return the data.
+    /// a dirty way to avoid async trait warning, you should see this as `` async fn try_cache -> anyhow::Result<Self>; ``
+    fn try_cache<P: AsRef<Path>+Send>(base:&Self::AcceptStorePoint, suffix:P, url:&str)
+        -> impl std::future::Future<Output = anyhow::Result<Self>> + Send{async move {
+
+        let path = base.get_base().join(suffix);
+
+        handle_file_not_exist(&path, url).await?;
+
+        let content = std::fs::read_to_string(path)?;
+        let json = serde_json::from_str(&content)?;
+
+        Ok(json)
+    }}
+
+    fn check_cache<P: AsRef<Path>+Send>(base:&Self::AcceptStorePoint, suffix:P, url: &str, sha:SHA)
+        -> impl std::future::Future<Output = anyhow::Result<Self>> + Send{async move {
+
+        let path = base.get_base().join(suffix);
+        handle_file_not_exist(&path, url).await?;
+
+        let content = std::fs::read(path.clone())?;
+
+        let valid = match sha {
+            SHA::SHA1(a) => {
+                let mut hasher = sha1::Sha1::new();
+                hasher.update(&content);
+                hasher.finalize().as_slice() == a
+            }
+            SHA::SHA256(b) => {
+                let mut hasher = sha2::Sha256::new();
+                hasher.update(&content);
+                hasher.finalize().as_slice() == b
+            }
+        };
+
+        if !valid{
+            let data = reqwest::get(url).await?.bytes().await?;
+            tokio::fs::write(&path, data).await?;
+        }
+
+        let content = std::fs::read_to_string(path)?; // we won't check the sha again, because we already download it.
+
+        let json = serde_json::from_str(&content)?;
+        Ok(json)
+    }}
 }
