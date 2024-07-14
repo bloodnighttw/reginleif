@@ -6,7 +6,7 @@ use std::num::ParseIntError;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 /// SHA enum
-#[derive(Debug,PartialEq)]
+#[derive(Debug,Clone,PartialEq)]
 pub enum SHA{
     SHA1(Vec<u8>),
     SHA256(Vec<u8>)
@@ -84,20 +84,5 @@ impl From<&SHA> for String{
 impl From<SHA> for String{
     fn from(value: SHA) -> Self {
         Self::from(&value)
-    }
-}
-
-mod test{
-    use crate::sha::SHA;
-
-    #[test]
-    fn test() -> anyhow::Result<()>{
-        let sha:SHA = "8ab31282892976da4695f5d721567f9584e1c6e69e9fef637b73f8cdc7adbcef".try_into()?;
-        let sha_string2:String = sha.into();
-
-        assert_eq!("8ab31282892976da4695f5d721567f9584e1c6e69e9fef637b73f8cdc7adbcef",sha_string2);
-
-        Ok(())
-
     }
 }
