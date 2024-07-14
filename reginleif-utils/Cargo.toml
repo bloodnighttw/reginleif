@@ -13,6 +13,7 @@ repository.workspace = true
 chrono.workspace = true
 serde.workspace = true
 anyhow.workspace = true
+thiserror.workspace = true
 async-trait.workspace = true
 tokio.workspace = true
 reginleif-macro.workspace = true

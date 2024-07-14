@@ -771,6 +771,7 @@ dependencies = [
  "reginleif-macro",
  "serde",
  "serde_json",
+ "thiserror",
  "tokio",
 ]
 
