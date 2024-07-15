@@ -1,9 +1,10 @@
 use std::marker::PhantomData;
 use std::path::PathBuf;
 use std::slice::Iter;
+use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use reginleif_macro::{Cache, Storage};
-use reginleif_utils::save_path::{BaseStorePoint, ExpandStorePoint};
+use reginleif_utils::save_path::{BaseStorePoint, Cache, ExpandStorePoint};
 use reginleif_utils::sha::SHA;
 use crate::metadata::client::version::VersionInfo;
 
@@ -13,6 +14,12 @@ pub struct PackageInfo{
     pub name:String,
     pub sha256:SHA,
     pub uid:String,
+}
+
+impl PackageInfo{
+    pub async fn get_details<T:BaseStorePoint+Clone>(&self,base_on:&T,client: Client,url:&str) -> anyhow::Result<PackageDetails<T>>{
+        PackageDetails::fetch(base_on,client,url,&self.uid,self.sha256.clone()).await
+    }
 }
 
 #[derive(Debug,Clone,PartialEq,Serialize,Deserialize,Storage)]
@@ -76,5 +83,18 @@ impl <T> IntoIterator for PackageDetails<T> where T:BaseStorePoint{
 impl <T> PackageDetails<T> where T:BaseStorePoint{
     fn iter(&self) -> Iter<'_, VersionInfo> {
         self.versions.iter()
+    }
+}
+
+impl <T> PackageDetails<T> where T:BaseStorePoint+Clone{
+    pub async fn fetch(base_on:&T, client: Client, base_url:&str, uid:&str, sha:SHA) -> anyhow::Result<Self>{
+        client.get(&format!("{}/{}/index.json",base_url,uid)).send().await?;
+        let a = Self::builder()
+            .base_on(base_on)
+            .url(format!("{}/{}/index.json",base_url,uid))
+            .add(uid)
+            .add("index.json")
+            .build_check(client.clone(),sha).await?;
+        Ok(a)
     }
 }
