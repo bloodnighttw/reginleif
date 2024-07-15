@@ -1,7 +1,9 @@
 use std::marker::PhantomData;
+use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use reginleif_macro::Cache;
-use reginleif_utils::save_path::BaseStorePoint;
+use reginleif_utils::save_path::{BaseStorePoint, Cache};
+use reginleif_utils::sha::SHA;
 use crate::metadata::client::asset::AssetIndex;
 use crate::metadata::client::library::{CommonLibrary, Library};
 use crate::metadata::client::package::DependencyPackage;
@@ -14,7 +16,7 @@ use crate::metadata::client::package::DependencyPackage;
 pub struct VersionInfo{
     pub recommended:bool,
     pub release_time:String,
-    pub sha256:String,
+    pub sha256:SHA,
     #[serde(rename="type")]
     pub rtype:Option<String>,
     #[serde(
@@ -29,6 +31,12 @@ pub struct VersionInfo{
     conflicts:Vec<DependencyPackage>,
     pub version:String,
     volatile: Option<bool>
+}
+
+impl VersionInfo {
+    pub async fn fetch_detail<T:BaseStorePoint+Clone>(&self,base_on:&T,client: Client, base_url:&str, uid:&str) -> anyhow::Result<VersionDetails<T>>{
+        VersionDetails::fetch(base_on,client,base_url,uid,self).await
+    }
 }
 
 
@@ -60,3 +68,13 @@ pub struct VersionDetails<T> where T:BaseStorePoint{
     _t:PhantomData<T>
 }
 
+impl <T> VersionDetails<T> where T:BaseStorePoint+Clone{
+    pub async fn fetch(base_on:&T, client: Client, base_url:&str, uid:&str, version_info: &VersionInfo) -> anyhow::Result<Self>{
+        Self::builder()
+            .base_on(base_on)
+            .url(format!("{}/{}/{}.json",base_url,uid,version_info.version))
+            .add(uid)
+            .add(format!("{}.json",version_info.version))
+            .build_check(client,version_info.sha256.clone()).await
+    }
+}   
