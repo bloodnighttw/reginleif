@@ -4,6 +4,7 @@
 
 use std::marker::PhantomData;
 use std::path::{Path, PathBuf};
+use reqwest::Client;
 use serde::{Serialize};
 use serde::de::DeserializeOwned;
 use sha1::Digest as Digest1;
@@ -345,11 +346,11 @@ pub trait Load:DeserializeOwned{
 }
 
 /// private function to handle the file which is not exist.
-async fn handle_file_not_exist(path:&PathBuf, url:&str) -> anyhow::Result<()>{
+async fn handle_file_not_exist(path:&PathBuf, client: &Client, url:&str) -> anyhow::Result<()>{
     tokio::fs::create_dir_all(path.parent().ok_or(anyhow::anyhow!("No parent"))?).await?;
 
     if !path.exists() { // fetching data
-        let data = reqwest::get(url).await?.bytes().await?;
+        let data = client.get(url).send().await?.bytes().await?;
         tokio::fs::write(path, data).await?;
     }
 
@@ -364,12 +365,12 @@ pub trait Cache:DeserializeOwned{
     /// if the file exist, it will return the data from disk.
     /// if the file not exist, it will fetch the data from the source and save it to the disk, then return the data.
     /// a dirty way to avoid async trait warning, you should see this as `` async fn try_cache -> anyhow::Result<Self>; ``
-    fn try_cache<P: AsRef<Path>+Send>(base:&Self::AcceptStorePoint, suffix:P, url:&str)
+    fn try_cache<P: AsRef<Path>+Send>(base:&Self::AcceptStorePoint, suffix:P, client: Client, url:&str)
         -> impl std::future::Future<Output = anyhow::Result<Self>> + Send{async move {
 
         let path = base.get_base().join(suffix);
 
-        handle_file_not_exist(&path, url).await?;
+        handle_file_not_exist(&path, &client, url).await?;
 
         let content = std::fs::read_to_string(path)?;
         let json = serde_json::from_str(&content)?;
@@ -377,11 +378,11 @@ pub trait Cache:DeserializeOwned{
         Ok(json)
     }}
 
-    fn check_cache<P: AsRef<Path>+Send>(base:&Self::AcceptStorePoint, suffix:P, url: &str, sha:SHA)
+    fn check_cache<P: AsRef<Path>+Send>(base:&Self::AcceptStorePoint, suffix:P, client: Client, url: &str, sha:SHA)
         -> impl std::future::Future<Output = anyhow::Result<Self>> + Send{async move {
 
         let path = base.get_base().join(suffix);
-        handle_file_not_exist(&path, url).await?;
+        handle_file_not_exist(&path, &client, url).await?;
 
         let content = std::fs::read(path.clone())?;
 
@@ -399,7 +400,7 @@ pub trait Cache:DeserializeOwned{
         };
 
         if !valid{
-            let data = reqwest::get(url).await?.bytes().await?;
+            let data = client.get(url).send().await?.bytes().await?;
             tokio::fs::write(&path, data).await?;
         }
 
@@ -446,14 +447,15 @@ impl <T,U> CacheBuilder<T, U> where U:Cache<AcceptStorePoint=T>, T:BaseStorePoin
         self
     }
 
-    pub fn build_check(&self,sha:SHA) -> impl std::future::Future<Output = anyhow::Result<U>> + Send + '_{
+    pub fn build_check(&self, client: Client, sha:SHA)
+                       -> impl std::future::Future<Output=anyhow::Result<U>> + Send + '_{
         let base = &self.base.as_ref().unwrap();
-        U::check_cache(base,&self.buf,&self.url,sha)
+        U::check_cache(base,&self.buf,client,&self.url,sha)
     }
 
-    pub fn build_try(&self) -> impl std::future::Future<Output = anyhow::Result<U>> + Send + '_{
+    pub fn build_try(&self, client: Client) -> impl std::future::Future<Output = anyhow::Result<U>> + Send + '_{
         let base = &self.base.as_ref().unwrap();
-        U::try_cache(base,&self.buf,&self.url)
+        U::try_cache(base,&self.buf,client,&self.url)
     }
 
 }
