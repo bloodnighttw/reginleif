@@ -1,6 +1,8 @@
 //! The module for the save and load the data from the file.
 //! It provides the trait to save and load the data from the file,
 //! from the path that is constant to dynamic.
+
+use std::marker::PhantomData;
 use std::path::{Path, PathBuf};
 use serde::{Serialize};
 use serde::de::DeserializeOwned;
@@ -343,13 +345,15 @@ pub trait Load:DeserializeOwned{
 }
 
 /// private function to handle the file which is not exist.
-async fn handle_file_not_exist(path:&PathBuf, url:&str){
+async fn handle_file_not_exist(path:&PathBuf, url:&str) -> anyhow::Result<()>{
     tokio::fs::create_dir_all(path.parent().ok_or(anyhow::anyhow!("No parent"))?).await?;
 
     if !path.exists() { // fetching data
         let data = reqwest::get(url).await?.bytes().await?;
         tokio::fs::write(path, data).await?;
     }
+
+    Ok(())
 }
 
 pub trait Cache:DeserializeOwned{
@@ -404,4 +408,52 @@ pub trait Cache:DeserializeOwned{
         let json = serde_json::from_str(&content)?;
         Ok(json)
     }}
+
+
+    fn builder() -> CacheBuilder<Self::AcceptStorePoint,Self> where Self::AcceptStorePoint:Clone{
+        CacheBuilder{
+            url:"".to_string(),
+            buf:PathBuf::new(),
+            base:None,
+            _t: PhantomData,
+        }
+    }
+
+}
+
+pub struct CacheBuilder<T:BaseStorePoint,U:Cache>{
+    url:String,
+    buf:PathBuf,
+    base:Option<T>,
+    _t:PhantomData<U>
+}
+
+
+impl <T,U> CacheBuilder<T, U> where U:Cache<AcceptStorePoint=T>, T:BaseStorePoint+Clone{
+
+    pub fn add<P: AsRef<Path>+Send>(mut self,args:P) -> Self{
+        self.buf.push(args);
+        self
+    }
+
+    pub fn url<P: AsRef<str>>(mut self,args:P) -> Self{
+        self.url = args.as_ref().to_string();
+        self
+    }
+
+    pub fn base_on(mut self, args:&T) -> Self{
+        self.base = Some(args.clone());
+        self
+    }
+
+    pub fn build_check(&self,sha:SHA) -> impl std::future::Future<Output = anyhow::Result<U>> + Send + '_{
+        let base = &self.base.as_ref().unwrap();
+        U::check_cache(base,&self.buf,&self.url,sha)
+    }
+
+    pub fn build_try(&self) -> impl std::future::Future<Output = anyhow::Result<U>> + Send + '_{
+        let base = &self.base.as_ref().unwrap();
+        U::try_cache(base,&self.buf,&self.url)
+    }
+
 }
