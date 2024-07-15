@@ -2,7 +2,7 @@ use std::marker::PhantomData;
 use std::path::PathBuf;
 use std::slice::Iter;
 use serde::{Deserialize, Serialize};
-use reginleif_macro::{Load, Storage};
+use reginleif_macro::{Cache, Storage};
 use reginleif_utils::save_path::{BaseStorePoint, ExpandStorePoint};
 use reginleif_utils::sha::SHA;
 use crate::metadata::client::version::VersionInfo;
@@ -16,7 +16,7 @@ pub struct PackageInfo{
 }
 
 #[derive(Debug,Clone,PartialEq,Serialize,Deserialize,Storage)]
-#[filepath(&["packages.json"])] #[filepath(&["packages.json"])]
+#[filepath(&["packages.json"])]
 pub struct PackageList<T> where T:BaseStorePoint{
     pub format_version:i32,
     pub packages:Vec<PackageInfo>,
@@ -48,7 +48,7 @@ pub struct DependencyPackage {
 
 /// For package details, like: minecraft, fabric-loader, etc.
 /// This struct is used to store the package details, like the name, uid, versions, etc.
-#[derive(Debug,Clone,Serialize,Deserialize,PartialEq,Load)]
+#[derive(Debug,Clone,Serialize,Deserialize,PartialEq,Cache)]
 #[serde(rename_all = "camelCase")]
 pub struct PackageDetails<T> where T:BaseStorePoint {
     pub format_version:i32,

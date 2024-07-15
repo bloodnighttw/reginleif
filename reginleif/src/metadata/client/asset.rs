@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::marker::PhantomData;
 use serde::Deserialize;
-use reginleif_macro::Load;
+use reginleif_macro::{Cache};
 use reginleif_utils::save_path::BaseStorePoint;
 
 #[derive(Debug,Clone,Deserialize,PartialEq)]
@@ -16,7 +16,7 @@ impl From<AssetObject> for String{
     }
 }
 
-#[derive(Debug,Clone,Deserialize,PartialEq,Load)]
+#[derive(Debug,Clone,Deserialize,PartialEq,Cache)]
 pub struct AssetInfo<T> where T:BaseStorePoint{
     pub objects:HashMap<String,AssetObject>,
     _t:PhantomData<T>

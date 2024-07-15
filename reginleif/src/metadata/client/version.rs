@@ -1,4 +1,7 @@
+use std::marker::PhantomData;
 use serde::{Deserialize, Serialize};
+use reginleif_macro::Cache;
+use reginleif_utils::save_path::BaseStorePoint;
 use crate::metadata::client::asset::AssetIndex;
 use crate::metadata::client::library::{CommonLibrary, Library};
 use crate::metadata::client::package::DependencyPackage;
@@ -29,14 +32,11 @@ pub struct VersionInfo{
 }
 
 
-
-
-
 /// This struct is used to store the version details of a package, like minecraft, fabric-loader, etc.
 /// Compared with VersionInfo, this struct contains more details, like the dependencies, libraries, main class, etc.
-#[derive(Debug,Clone,Deserialize,PartialEq)]
+#[derive(Debug,Clone,Deserialize,PartialEq,Cache)]
 #[serde(rename_all = "camelCase")]
-pub struct VersionDetails {
+pub struct VersionDetails<T> where T:BaseStorePoint{
     pub format_version: i32,
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub conflicts:Vec<DependencyPackage>,
@@ -57,5 +57,6 @@ pub struct VersionDetails {
     pub main_jar:Option<CommonLibrary>,
     pub minecraft_arguments:Option<String>,
     pub asset_index:Option<AssetIndex>,
+    _t:PhantomData<T>
 }
 
