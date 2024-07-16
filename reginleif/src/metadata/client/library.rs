@@ -112,7 +112,7 @@ fn os_processing<'de, D: Deserializer<'de>>(deserializer: D) -> Result<Option<Pl
 
     let obj = match Value::deserialize(deserializer)?{
         Object(obj) => {obj},
-        _ => {return Ok(None)}
+        _ => { unreachable!("Failed to deserialize the os field in Rule struct. This reached the unreachable code.")}
     };
 
     if let Some(Value::String(os)) = obj.get("name"){
