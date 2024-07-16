@@ -36,7 +36,7 @@ mod client{
             // println!("{:?}",pkg_details);
             let version_info = pkg_details.iter().find(|x| x.version == version).unwrap();
             // println!("{:?}",version_info);
-            let version_details = version_info.get_detail(&base_path,client.clone(),endpoint,uid).await;
+            let version_details = version_info.get_details(&base_path,client.clone(),endpoint,uid).await;
             println!("{:?}",version_details);
         }
 
