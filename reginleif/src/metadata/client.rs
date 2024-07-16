@@ -1,4 +1,4 @@
-mod package;
-mod version;
-mod library;
-mod asset;
+pub mod package;
+pub mod version;
+pub mod library;
+pub mod asset;

@@ -4,7 +4,7 @@ use std::slice::Iter;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use reginleif_macro::{Cache, Storage};
-use reginleif_utils::save_path::{BaseStorePoint, Cache, ExpandStorePoint};
+use reginleif_utils::save_path::{BaseStorePoint, Cache, ExpandStorePoint, Store};
 use reginleif_utils::sha::SHA;
 use crate::metadata::client::version::VersionInfo;
 
@@ -32,7 +32,7 @@ impl PackageInfo{
 /// It contains the format version and the list of package info.
 ///
 /// For details, see [PackageInfo].
-#[derive(Debug,Clone,PartialEq,Serialize,Deserialize,Storage)]
+#[derive(Debug,Clone,PartialEq,Serialize,Deserialize,Storage,Cache)]
 #[filepath(&["packages.json"])]
 pub struct PackageList<T> where T:BaseStorePoint{
     /// The format version of the package list.
@@ -54,6 +54,20 @@ impl <T> IntoIterator for PackageList<T> where T:BaseStorePoint{
 impl <T> PackageList<T> where T:BaseStorePoint{
     pub fn iter(&self) -> Iter<'_, PackageInfo> {
         self.packages.iter()
+    }
+}
+
+impl <T> PackageList<T> where T:BaseStorePoint+Clone{
+    pub async fn fetch(base_on:&T, client: Client, url: &str) -> anyhow::Result<Self>{
+        let mut builder = Self::builder()
+            .base_on(base_on)
+            .url(url);
+
+        for i in Self::FILE_PATH.iter(){
+            builder = builder.add(i);
+        }
+
+        builder.build_try(client).await
     }
 }
 
