@@ -36,10 +36,14 @@ mod client{
             // println!("{:?}",pkg_details);
             let version_info = pkg_details.iter().find(|x| x.version == version).unwrap();
             // println!("{:?}",version_info);
-            let version_details = version_info.get_details(&base_path,client.clone(),endpoint,uid).await;
-            println!("{:?}",version_details);
-        }
+            let version_details = version_info.get_details(&base_path,client.clone(),endpoint,uid).await?;
+            // println!("{:?}",version_details);
+            if version_details.asset_index.is_some(){
+                let assets = version_details.asset_index.unwrap().fetch_assets_info(&base_path,client.clone()).await?;
+                // println!("{:?}",assets);
+            }
 
+        }
 
         Ok(())
     }
