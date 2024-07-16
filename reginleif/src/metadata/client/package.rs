@@ -8,24 +8,36 @@ use reginleif_utils::save_path::{BaseStorePoint, Cache, ExpandStorePoint};
 use reginleif_utils::sha::SHA;
 use crate::metadata::client::version::VersionInfo;
 
+/// This struct represents simple package information.
+/// It's used to store the package name, uid, and sha256,
+/// which is used to fetch and verify the package details from [PackageDetails].
 #[derive(Debug,Clone,Serialize,Deserialize,PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct PackageInfo{
+    /// The name of the package, like: minecraft, fabric-loader, etc.
     pub name:String,
+    /// The sha256 of the package.
     pub sha256:SHA,
+    /// The uid of the package, like: net.minecraft, net.fabricmc.loader, etc.
     pub uid:String,
 }
 
 impl PackageInfo{
     pub async fn get_details<T:BaseStorePoint+Clone>(&self,base_on:&T,client: Client,url:&str) -> anyhow::Result<PackageDetails<T>>{
-        PackageDetails::fetch(base_on,client,url,&self.uid,self.sha256.clone()).await
+        PackageDetails::fetch(base_on,client,url,self).await
     }
 }
 
+/// This struct is used to store the package list.
+/// It contains the format version and the list of package info.
+///
+/// For details, see [PackageInfo].
 #[derive(Debug,Clone,PartialEq,Serialize,Deserialize,Storage)]
 #[filepath(&["packages.json"])]
 pub struct PackageList<T> where T:BaseStorePoint{
+    /// The format version of the package list.
     pub format_version:i32,
+    /// The packages list.
     pub packages:Vec<PackageInfo>,
     pub _t:PhantomData<T>
 }
@@ -45,22 +57,35 @@ impl <T> PackageList<T> where T:BaseStorePoint{
     }
 }
 
-/// This struct is used to store the required or conflict package information.
+/// This struct is used to store the dependency package.
+/// Dependency package has three fields: suggests, equals, and uid.
+/// suggest and equals represent the relationship from uid.
+///
+/// For details, see field description.
 #[derive(Debug,Clone,Deserialize,Serialize,PartialEq)]
 pub struct DependencyPackage {
+    /// when suggest is Some(String), the value of String is the suggested package version.
     pub suggests:Option<String>,
+    /// when equals is Some(String), the value of String is the required package version.
     pub equals:Option<String>,
+    /// The uid of the package, when both equals and suggests are None, the package is required, but the version is not specified.
     pub uid: String
 }
 
-/// For package details, like: minecraft, fabric-loader, etc.
-/// This struct is used to store the package details, like the name, uid, versions, etc.
+/// This struct represents the package details.
+/// It contains the format version, name, uid, and versions of the package.
+/// The versions are stored in a vector of [`VersionInfo`].
+/// If you want to get the version details, you can use the [`VersionInfo::fetch_detail`] to fetch it.
 #[derive(Debug,Clone,Serialize,Deserialize,PartialEq,Cache)]
 #[serde(rename_all = "camelCase")]
 pub struct PackageDetails<T> where T:BaseStorePoint {
+    /// The format version of the package details.
     pub format_version:i32,
+    /// The name of the package, like: minecraft, fabric-loader, etc.
     pub name:String,
+    /// the uid of the package, like: net.minecraft, net.fabricmc.loader, etc.
     pub uid:String,
+    /// The versions of the package.
     pub versions:Vec<VersionInfo>,
     _t:PhantomData<T>
 }
@@ -87,14 +112,12 @@ impl <T> PackageDetails<T> where T:BaseStorePoint{
 }
 
 impl <T> PackageDetails<T> where T:BaseStorePoint+Clone{
-    pub async fn fetch(base_on:&T, client: Client, base_url:&str, uid:&str, sha:SHA) -> anyhow::Result<Self>{
-        client.get(&format!("{}/{}/index.json",base_url,uid)).send().await?;
-        let a = Self::builder()
+    pub async fn fetch(base_on:&T, client: Client, base_url:&str, package_info: &PackageInfo) -> anyhow::Result<Self>{
+        Self::builder()
             .base_on(base_on)
-            .url(format!("{}/{}/index.json",base_url,uid))
-            .add(uid)
+            .url(format!("{}/{}/index.json",base_url,package_info.uid))
+            .add(&package_info.uid)
             .add("index.json")
-            .build_check(client.clone(),sha).await?;
-        Ok(a)
+            .build_check(client.clone(),package_info.sha256.clone()).await
     }
 }
