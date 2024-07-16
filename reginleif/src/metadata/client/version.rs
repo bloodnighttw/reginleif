@@ -34,7 +34,7 @@ pub struct VersionInfo{
 }
 
 impl VersionInfo {
-    pub async fn fetch_detail<T:BaseStorePoint+Clone>(&self,base_on:&T,client: Client, base_url:&str, uid:&str) -> anyhow::Result<VersionDetails<T>>{
+    pub async fn get_details<T:BaseStorePoint+Clone>(&self,base_on:&T,client: Client, base_url:&str, uid:&str) -> anyhow::Result<VersionDetails<T>>{
         VersionDetails::fetch(base_on,client,base_url,uid,self).await
     }
 }
@@ -65,6 +65,7 @@ pub struct VersionDetails<T> where T:BaseStorePoint{
     pub main_jar:Option<CommonLibrary>,
     pub minecraft_arguments:Option<String>,
     pub asset_index:Option<AssetIndex>,
+    #[serde(skip)]
     _t:PhantomData<T>
 }
 

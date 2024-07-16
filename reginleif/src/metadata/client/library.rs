@@ -1,5 +1,7 @@
 use std::collections::HashMap;
-use serde::Deserialize;
+use serde::{Deserialize, Deserializer};
+use serde_json::Value;
+use serde_json::Value::Object;
 
 /// This enum is used to store the library information, it contains the common library
 /// information or maven-based library information.
@@ -34,6 +36,7 @@ pub struct CommonLibrary {
 #[derive(Debug,Clone,Deserialize,PartialEq)]
 pub struct Rule{
     action:Action,
+    #[serde(deserialize_with = "os_processing")]
     os:Option<Platform>
 }
 
@@ -53,6 +56,20 @@ pub enum Platform{
     #[serde(rename = "osx-arm64")]
     MacOsArm64,
     Unknown
+}
+
+impl From<&String> for Platform{
+    fn from(value: &String) -> Self {
+        match value.as_str(){
+            "windows" => Platform::Windows,
+            "windows-arm64" => Platform::WindowsArm64,
+            "linux" => Platform::Linux,
+            "linux-arm32" => Platform::LinuxArm32,
+            "linux-arm64" => Platform::LinuxArm64,
+            "osx-arm64" => Platform::MacOsArm64,
+            _ => Platform::Unknown
+        }
+    }
 }
 
 /// Allow mean this rule is allow on the rule's platform, disallow mean this rule is disallow on the rule's platform.
@@ -87,4 +104,21 @@ pub struct Artifact{
 pub struct Extract{
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     exclude:Vec<String>
+}
+
+
+/// This function is used to deserialize the os field in Rule struct.
+fn os_processing<'de, D: Deserializer<'de>>(deserializer: D) -> Result<Option<Platform>, D::Error> {
+
+    let obj = match Value::deserialize(deserializer)?{
+        Object(obj) => {obj},
+        _ => {return Ok(None)}
+    };
+
+    if let Some(Value::String(os)) = obj.get("name"){
+        return Ok(Some(os.into()))
+    }
+
+    unreachable!("Failed to deserialize the os field in Rule struct. This reached the unreachable code.")
+
 }

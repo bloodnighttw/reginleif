@@ -21,6 +21,7 @@ impl From<AssetObject> for String{
 #[derive(Debug,Clone,Deserialize,PartialEq,Cache)]
 pub struct AssetInfo<T> where T:BaseStorePoint{
     pub objects:HashMap<String,AssetObject>,
+    #[serde(skip)]
     _t:PhantomData<T>
 }
 

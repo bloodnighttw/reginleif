@@ -34,11 +34,13 @@ impl PackageInfo{
 /// For details, see [PackageInfo].
 #[derive(Debug,Clone,PartialEq,Serialize,Deserialize,Storage,Cache)]
 #[filepath(&["packages.json"])]
+#[serde(rename_all = "camelCase")]
 pub struct PackageList<T> where T:BaseStorePoint{
     /// The format version of the package list.
     pub format_version:i32,
     /// The packages list.
     pub packages:Vec<PackageInfo>,
+    #[serde(skip)]
     pub _t:PhantomData<T>
 }
 
@@ -101,6 +103,7 @@ pub struct PackageDetails<T> where T:BaseStorePoint {
     pub uid:String,
     /// The versions of the package.
     pub versions:Vec<VersionInfo>,
+    #[serde(skip)]
     _t:PhantomData<T>
 }
 
@@ -120,7 +123,7 @@ impl <T> IntoIterator for PackageDetails<T> where T:BaseStorePoint{
 }
 
 impl <T> PackageDetails<T> where T:BaseStorePoint{
-    fn iter(&self) -> Iter<'_, VersionInfo> {
+    pub fn iter(&self) -> Iter<'_, VersionInfo> {
         self.versions.iter()
     }
 }
