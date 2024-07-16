@@ -1,10 +1,9 @@
 use std::marker::PhantomData;
-use std::path::PathBuf;
 use std::slice::Iter;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use reginleif_macro::{Cache, Storage};
-use reginleif_utils::save_path::{BaseStorePoint, Cache, ExpandStorePoint, Store};
+use reginleif_utils::save_path::{BaseStorePoint, Cache, Store};
 use reginleif_utils::sha::SHA;
 use crate::metadata::client::version::VersionInfo;
 
@@ -42,15 +41,6 @@ pub struct PackageList<T> where T:BaseStorePoint{
     pub packages:Vec<PackageInfo>,
     #[serde(skip)]
     pub _t:PhantomData<T>
-}
-
-impl <T> IntoIterator for PackageList<T> where T:BaseStorePoint{
-    type Item = PackageInfo;
-    type IntoIter = std::vec::IntoIter<Self::Item>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        self.packages.into_iter()
-    }
 }
 
 impl <T> PackageList<T> where T:BaseStorePoint{
@@ -105,21 +95,6 @@ pub struct PackageDetails<T> where T:BaseStorePoint {
     pub versions:Vec<VersionInfo>,
     #[serde(skip)]
     _t:PhantomData<T>
-}
-
-impl <T> ExpandStorePoint for PackageDetails<T> where T:BaseStorePoint{
-    fn get_suffix(&self) -> PathBuf {
-        PathBuf::from(&self.uid).join("index.json")
-    }
-}
-
-impl <T> IntoIterator for PackageDetails<T> where T:BaseStorePoint{
-    type Item = VersionInfo;
-    type IntoIter = std::vec::IntoIter<VersionInfo>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        self.versions.into_iter()
-    }
 }
 
 impl <T> PackageDetails<T> where T:BaseStorePoint{
