@@ -8,6 +8,7 @@ use reqwest::Client;
 use serde::{Serialize};
 use serde::de::DeserializeOwned;
 use sha1::Digest as Digest1;
+use log::log;
 use crate::sha::SHA;
 
 /// A trait for the base path of the data.
@@ -400,8 +401,10 @@ pub trait Cache:DeserializeOwned{
         };
 
         if !valid{
-            let data = client.get(url).send().await?.bytes().await?;
-            tokio::fs::write(&path, data).await?;
+            match client.get(url).send().await?.bytes().await{
+                Ok(data) => {tokio::fs::write(&path, data).await?;}
+                Err(e) => {log::error!("Error while fetching {url}, details:{}",e.to_string())} // we won't do anything if the data is not fetched successfully.
+            };
         }
 
         let content = std::fs::read_to_string(path)?; // we won't check the sha again, because we already download it.

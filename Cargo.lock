@@ -816,6 +816,7 @@ dependencies = [
  "anyhow",
  "async-trait",
  "chrono",
+ "log",
  "reginleif-macro",
  "reqwest",
  "serde",
