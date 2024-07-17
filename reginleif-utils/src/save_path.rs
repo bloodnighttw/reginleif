@@ -379,6 +379,9 @@ pub trait Cache:DeserializeOwned{
         Ok(json)
     }}
 
+    /// 1. the file exist and the sha is valid, return the data from disk.
+    /// 2. the file exist and the sha is invalid, fetch the data from the source and save it to the disk, then return the data.
+    /// 3. the file not exist, fetch the data from the source and save it to the disk, then return the data.
     fn check_cache<P: AsRef<Path>+Send>(base:&Self::AcceptStorePoint, suffix:P, client: Client, url: &str, sha:SHA)
         -> impl std::future::Future<Output = anyhow::Result<Self>> + Send{async move {
 
@@ -413,7 +416,7 @@ pub trait Cache:DeserializeOwned{
         Ok(json)
     }}
 
-
+    /// Return a builder for the cache.
     fn builder() -> CacheBuilder<Self::AcceptStorePoint,Self> where Self::AcceptStorePoint:Clone{
         CacheBuilder{
             url:"".to_string(),
@@ -425,6 +428,9 @@ pub trait Cache:DeserializeOwned{
 
 }
 
+
+/// Using builder pattern for [Cache] trait.
+/// This builder is required [T] impl Clone trait to use.
 pub struct CacheBuilder<T:BaseStorePoint,U:Cache>{
     url:String,
     buf:PathBuf,
@@ -435,27 +441,32 @@ pub struct CacheBuilder<T:BaseStorePoint,U:Cache>{
 
 impl <T,U> CacheBuilder<T, U> where U:Cache<AcceptStorePoint=T>, T:BaseStorePoint+Clone{
 
+    /// append the path to the buffer.
     pub fn add<P: AsRef<Path>+Send>(mut self,args:P) -> Self{
         self.buf.push(args);
         self
     }
 
+    /// change the url you want to fetch.
     pub fn url<P: AsRef<str>>(mut self,args:P) -> Self{
         self.url = args.as_ref().to_string();
         self
     }
 
+    /// set the base path of the data.
     pub fn base_on(mut self, args:&T) -> Self{
         self.base = Some(args.clone());
         self
     }
 
+    /// run [U::check_cache] from builder and return the result.
     pub fn build_check(&self, client: Client, sha:SHA)
                        -> impl std::future::Future<Output=anyhow::Result<U>> + Send + '_{
         let base = &self.base.as_ref().unwrap();
         U::check_cache(base,&self.buf,client,&self.url,sha)
     }
 
+    /// run [U::try_cache] from builder and return the result.
     pub fn build_try(&self, client: Client) -> impl std::future::Future<Output = anyhow::Result<U>> + Send + '_{
         let base = &self.base.as_ref().unwrap();
         U::try_cache(base,&self.buf,client,&self.url)

@@ -33,6 +33,7 @@ impl<'de> Deserialize<'de> for SHA{
     }
 }
 
+/// decode hex to u8 array
 fn decode_hex(s: &str) -> Result<Vec<u8>, ParseIntError> {
     (0..s.len())
         .step_by(2)
@@ -44,7 +45,7 @@ fn decode_hex(s: &str) -> Result<Vec<u8>, ParseIntError> {
 impl TryFrom<&str> for SHA{
     type Error = ParseIntError;
 
-
+    /// decode str to SHA
     fn try_from(value: &str) -> Result<Self, Self::Error> {
 
         let decode = decode_hex(value)?;
@@ -63,12 +64,14 @@ impl TryFrom<&str> for SHA{
 impl TryFrom<String> for SHA{
     type Error = ParseIntError;
 
+    /// convert String to SHA
     fn try_from(value: String) -> Result<Self, Self::Error> {
         Self::try_from(value.as_str())
     }
 }
 
 impl From<&SHA> for String{
+    /// convert SHA to String
     fn from(value: &SHA) -> Self {
         match value {
             SHA::SHA1(v) => {
@@ -82,6 +85,7 @@ impl From<&SHA> for String{
 }
 
 impl From<SHA> for String{
+    /// encode SHA to String
     fn from(value: SHA) -> Self {
         Self::from(&value)
     }
