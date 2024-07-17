@@ -2,12 +2,13 @@
 mod test{
     use std::marker::PhantomData;
     use std::path::{PathBuf};
+    use reqwest::Client;
     use serde::{Deserialize, Serialize};
     use reginleif_macro::{BaseStorePoint, Load, Save, Storage};
-    use reginleif_utils::save_path::{BaseStorePoint, ExpandStorePoint, Load, Save, Store};
+    use reginleif_utils::save_path::{BaseStorePoint, Cache, ExpandStorePoint, Load, Save, Store};
+    use reginleif_utils::sha::SHA;
 
-
-    #[derive(BaseStorePoint,PartialEq,Debug)]
+    #[derive(BaseStorePoint,PartialEq,Debug,Clone)]
     struct TestPath(PathBuf);
 
     impl From<PathBuf> for TestPath{
@@ -111,6 +112,38 @@ mod test{
         fn get_suffix(&self) -> PathBuf {
             PathBuf::from(&format!("{}.txt",&self.num))
         }
+    }
+
+    #[derive(Deserialize,Debug)]
+    struct OUO{
+        uid:String
+    }
+
+    impl Cache for OUO{
+        type AcceptStorePoint = TestPath;
+    }
+
+    #[tokio::test]
+    async fn cache_test() -> anyhow::Result<()>{
+        let sha:SHA = "c0094ab29be4be93b7cf0e05067608814afb6c4f40223784ecb69e6635cd6bbf".try_into()?;
+
+        let base: TestPath = PathBuf::from("test_ouo").into();
+        let client = Client::new();
+
+        let _a = OUO::builder()
+            .base_on(&base)
+            .url("https://meta.prismlauncher.org/v1/org.lwjgl/")
+            .add("test.txt")
+            .build_try(client.clone()).await?;
+
+        let _b = OUO::builder()
+            .base_on(&base)
+            .url("https://meta.prismlauncher.org/v1/org.lwjgl/")
+            .add("test.txt")
+            .build_check(client.clone(),sha).await?;
+
+        tokio::fs::remove_dir_all(PathBuf::from("test_ouo")).await?;
+        Ok(())
     }
 
 

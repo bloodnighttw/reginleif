@@ -198,3 +198,43 @@ pub fn load(item: TokenStream) -> TokenStream {
     let implement = impl_load(ast);
     implement
 }
+
+fn impl_cache(ast: DeriveInput) -> TokenStream{
+    let ident = ast.ident;
+    let base_on = ast.attrs.iter().filter(
+        |x| x.path().is_ident("base_on")
+    ).nth(0);
+
+    if let Some(base_on) = base_on {
+        let base_on = match &base_on.meta {
+            Meta::List(a) => a.tokens.clone(),
+            _o=> panic!("error while parsing argument!")
+        };
+
+        let token = quote::quote! {
+            impl reginleif_utils::save_path::Cache for #ident{
+                type AcceptStorePoint = #base_on;
+            }
+        };
+
+        token.into()
+    } else { // this mean we are declared a generic struct.
+        let token = quote::quote! {
+            impl<T> reginleif_utils::save_path::Cache for #ident<T>
+            where T: reginleif_utils::save_path::BaseStorePoint{
+                type AcceptStorePoint = T;
+            }
+        };
+
+        token.into()
+
+    }
+
+}
+
+#[proc_macro_derive(Cache, attributes(base_on))]
+pub fn cache(item: TokenStream) -> TokenStream {
+    let ast:DeriveInput = syn::parse(item).unwrap();
+    let implement = impl_cache(ast);
+    implement
+}
