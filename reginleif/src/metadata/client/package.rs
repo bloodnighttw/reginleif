@@ -104,6 +104,7 @@ impl <T> PackageDetails<T> where T:BaseStorePoint{
 }
 
 impl <T> PackageDetails<T> where T:BaseStorePoint+Clone{
+    /// fetch the package details from the server.
     pub async fn fetch(base_on:&T, client: Client, base_url:&str, package_info: &PackageInfo) -> anyhow::Result<Self>{
         Self::builder()
             .base_on(base_on)
