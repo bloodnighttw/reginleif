@@ -70,6 +70,7 @@ pub struct VersionDetails<T> where T:BaseStorePoint{
 }
 
 impl <T> VersionDetails<T> where T:BaseStorePoint+Clone{
+    /// Fetch the version details from the server.
     pub async fn fetch(base_on:&T, client: Client, base_url:&str, uid:&str, version_info: &VersionInfo) -> anyhow::Result<Self>{
         Self::builder()
             .base_on(base_on)
