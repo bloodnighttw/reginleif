@@ -138,6 +138,14 @@ where
         Ok(&self.data)
     }
 
+    pub fn expire_in(&self) -> Duration{
+        let duration = (Local::now() - self.created_at)
+            .to_std()
+            .expect("Failed to convert chrono::Duration to std::Duration");
+
+        self.data.get_duration() - duration
+    }
+
 }
 
 

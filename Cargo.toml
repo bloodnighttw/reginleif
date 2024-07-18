@@ -8,7 +8,7 @@ members=[
 resolver = "2"
 
 [workspace.package]
-version = "0.2.0" # Don't forget to update this version to dependencies in [workspace.dependencies] reginleif-utils and reginleif-macro
+version = "0.2.1" # Don't forget to update this version to dependencies in [workspace.dependencies] reginleif-utils and reginleif-macro
 license = "Apache-2.0"
 description = "The core library of nolauncher."
 readme = "README.md"
@@ -23,8 +23,8 @@ tokio = {  version = "1.38.0", features = ["full"] }
 async-trait = "0.1.81"
 reqwest = { version = "0.12.5", features = ["json"] }
 thiserror = "1.0.61"
-reginleif-utils = {path = "reginleif-utils", version = "0.2.0"} # Same version as workspace
-reginleif-macro = {path = "reginleif-macro", version = "0.2.0"} # Same version as workspace
+reginleif-utils = {path = "reginleif-utils", version = "0.2.1"} # Same version as workspace
+reginleif-macro = {path = "reginleif-macro", version = "0.2.1"} # Same version as workspace
 sha2 = "0.10.8"
 sha1 = "0.10.6"
 quote = "1.0.36"
