@@ -12,7 +12,7 @@ use async_trait::async_trait;
 /// * `data`: the data that will expire, the data must impl [Expirable](Expirable) and [Refreshable](Refreshable).
 /// * `created_at`: the time this data created/refresh.
 ///
-#[derive(Clone, Deserialize, Serialize, Debug, PartialEq)]
+#[derive(Clone, Deserialize, Serialize, Debug, Eq, PartialEq, Hash, PartialOrd, Ord)]
 pub struct ExpiringData<T> where T:Expirable+Refreshable
 {
 

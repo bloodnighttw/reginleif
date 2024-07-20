@@ -8,7 +8,7 @@ use crate::auth::xbox::XboxSecurityError::Others;
 /// Xbox Live Token
 /// 
 /// This token is used to authenticate with Xbox Security Token.
-#[derive(Debug)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub struct XboxLiveToken(String);
 
 impl From<&str> for XboxLiveToken {
@@ -66,7 +66,7 @@ impl XboxLiveToken {
 /// Xbox Security Token
 /// 
 /// This token is used to authenticate the user with Minecraft Auth Server.
-#[derive(Debug)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub struct XboxSecurityToken{
     pub token: String,
     pub uhs: String,
