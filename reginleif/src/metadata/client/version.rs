@@ -28,9 +28,10 @@ pub struct VersionInfo{
         skip_serializing_if = "Vec::is_empty",
         default
     )]
-    conflicts:Vec<DependencyPackage>,
+    pub conflicts:Vec<DependencyPackage>,
     pub version:String,
-    volatile: Option<bool>
+    #[serde(default)]
+    pub volatile: bool
 }
 
 impl VersionInfo {
