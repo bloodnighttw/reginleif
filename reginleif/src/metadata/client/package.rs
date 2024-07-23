@@ -61,6 +61,18 @@ impl <T> PackageList<T> where T:BaseStorePoint+Clone{
 
         builder.build_try(client).await
     }
+    
+    pub async fn refresh(base_on:&T, client: Client, url: &str) -> anyhow::Result<Self>{
+        let mut builder = Self::builder()
+            .base_on(base_on)
+            .url(url);
+
+        for i in Self::FILE_PATH.iter(){
+            builder = builder.add(i);
+        }
+
+        builder.build_refresh(client).await
+    }
 }
 
 /// This struct is used to store the dependency package.

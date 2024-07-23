@@ -492,5 +492,10 @@ impl <T,U> CacheBuilder<T, U> where U:Cache<AcceptStorePoint=T>, T:BaseStorePoin
         let base = &self.base.as_ref().unwrap();
         U::try_cache(base,&self.buf,client,&self.url)
     }
+    
+    pub fn build_refresh(&self, client: Client) -> impl std::future::Future<Output = anyhow::Result<U>> + Send + '_{
+        let base = &self.base.as_ref().unwrap();
+        U::refresh_cache(base,&self.buf,client,&self.url)
+    } 
 
 }
