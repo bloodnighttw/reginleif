@@ -4,7 +4,7 @@
 
 use std::marker::PhantomData;
 use std::path::{Path, PathBuf};
-use reqwest::Client;
+use reqwest::{Client, Error, Response};
 use serde::{Serialize};
 use serde::de::DeserializeOwned;
 use sha1::Digest as Digest1;
@@ -358,9 +358,33 @@ async fn handle_file_not_exist(path:&PathBuf, client: &Client, url:&str) -> anyh
     Ok(())
 }
 
+/// try to download the content from the url and save it to the disk.
+/// if not success, we won't save it
+async fn try_download(client: &Client, url:&str, path:&PathBuf) -> anyhow::Result<()>{
+    match client.get(url).send().await?.bytes().await{
+        Ok(data) => {tokio::fs::write(&path, data).await?;}
+        Err(e) => {log::error!("Error while fetching {url}, details:{}",e.to_string())} // we won't do anything if the data is not fetched successfully.
+    };
+    Ok(())
+}
+
 pub trait Cache:DeserializeOwned{
 
     type AcceptStorePoint:BaseStorePoint;
+
+
+    fn refresh_cache<P: AsRef<Path>+Send>(base:&Self::AcceptStorePoint, suffix:P, client: Client, url:&str)
+        -> impl std::future::Future<Output = anyhow::Result<Self>> + Send{async move {
+        
+        let path = base.get_base().join(&suffix);
+        try_download(&client,&url,&path).await?;
+
+        let content = std::fs::read_to_string(path)?;
+        let json = serde_json::from_str(&content)?;
+        
+        Ok(json)
+    }}
+
 
     /// this will check file exist or not.
     /// if the file exist, it will return the data from disk.
@@ -404,10 +428,7 @@ pub trait Cache:DeserializeOwned{
         };
 
         if !valid{
-            match client.get(url).send().await?.bytes().await{
-                Ok(data) => {tokio::fs::write(&path, data).await?;}
-                Err(e) => {log::error!("Error while fetching {url}, details:{}",e.to_string())} // we won't do anything if the data is not fetched successfully.
-            };
+            try_download(&client,&url,&path).await?;
         }
 
         let content = std::fs::read_to_string(path)?; // we won't check the sha again, because we already download it.
