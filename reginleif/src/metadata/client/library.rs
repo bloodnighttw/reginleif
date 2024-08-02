@@ -58,6 +58,61 @@ pub enum Platform{
     Unknown
 }
 
+impl Platform{
+    pub fn me() -> Self{
+
+        #[cfg(target_os = "windows")]
+        #[cfg(target_arch = "x86_64")]
+        return Self::Windows;
+
+        #[cfg(target_os = "windows")]
+        #[cfg((target_arch = "aarch64"))]
+        return Self::WindowsArm64;
+
+        #[cfg(target_os = "linux")]
+        #[cfg(target_arch = "x86_64")]
+        return Self::Linux;
+
+        #[cfg(target_os = "linux")]
+        #[cfg(target_arch = "arm")]
+        return Self::LinuxArm32;
+
+        #[cfg(target_os = "linux")]
+        #[cfg(target_arch = "aarch64")]
+        return Self::LinuxArm64;
+
+        #[cfg(target_os = "macos")]
+        #[cfg(target_arch = "aarch64")]
+        return Self::MacOsArm64;
+
+    }
+
+    pub fn allow_rule(&self,rules:Vec<Rule>)->bool{
+        if rules.len() == 0 {
+            return true;
+        }
+        
+        let mut data = false;
+
+        for i in rules{
+            match i.action {
+                Action::Allow => {
+                    if i.os.is_none() || Some(self.clone()) == i.os{
+                        data = true   
+                    }
+                }
+                Action::Disallow => {
+                    if i.os.is_none() || Some(self.clone()) == i.os{
+                        return false // disallow action has higher priority than allow
+                    }
+                }
+            }
+        }
+        
+        data
+    }
+}
+
 impl From<&String> for Platform{
     fn from(value: &String) -> Self {
         match value.as_str(){
